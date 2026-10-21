@@ -4,6 +4,7 @@ import { useStore } from './store'
 import { buildReminders } from './lib/schedule'
 import { todayISO } from './lib/format'
 import { Icon, IconName } from './components/ui'
+import { Logo } from './components/Logo'
 import { Dashboard } from './pages/Dashboard'
 import { Campaigns } from './pages/Campaigns'
 import { CampaignEditor } from './pages/CampaignEditor'
@@ -65,9 +66,8 @@ export default function App() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <a href="#/" className="logo">
-          <span className="logo-mark">P</span>
-          <span>CreatorPubli</span>
+        <a href="#/" className="logo" aria-label="CreatorPubli — início">
+          <Logo />
         </a>
         <nav>
           {NAV.map((n) => (

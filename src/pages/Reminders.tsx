@@ -2,8 +2,10 @@ import { useMemo } from 'react'
 import { useStore } from '../store'
 import { ReminderSettings } from '../types'
 import { fmtDate, todayISO } from '../lib/format'
-import { Severity, buildReminders } from '../lib/schedule'
-import { Card, Empty, KindTag, PageHead, SeverityDot } from '../components/ui'
+import { Severity, buildReminders, digestText } from '../lib/schedule'
+import { waLink } from '../lib/whatsapp'
+import { Card, Empty, Icon, KindTag, PageHead, SeverityDot } from '../components/ui'
+import { Premium, PremiumBadge } from '../components/Premium'
 
 const GROUPS: { id: Severity; label: string }[] = [
   { id: 'atrasado', label: 'Atrasados' },
@@ -82,13 +84,49 @@ export function Reminders() {
                   ))}
                 </select>
               </label>
-              <label className="field wide disabled">
-                <span>
-                  WhatsApp <span className="soon">em breve</span>
-                </span>
-                <input placeholder="(11) 90000-0000" value={settings.whatsapp} disabled />
-              </label>
             </div>
+          </Card>
+
+          <Card
+            title={
+              <span className="row gap">
+                <Icon name="whatsapp" /> WhatsApp <PremiumBadge />
+              </span>
+            }
+          >
+            <Premium feature="Lembretes por WhatsApp" description="Receba o resumo do dia e os alertas de cobrança direto no seu WhatsApp.">
+              <div className="form-grid">
+                <label className="field wide">
+                  <span>Seu número</span>
+                  <input
+                    placeholder="(11) 90000-0000"
+                    value={settings.whatsapp}
+                    onChange={(e) => updateSettings({ whatsapp: e.target.value })}
+                  />
+                </label>
+                <label className="switch wide">
+                  <input
+                    type="checkbox"
+                    checked={settings.whatsappEnabled}
+                    onChange={(e) => updateSettings({ whatsappEnabled: e.target.checked })}
+                  />
+                  <span className="switch-track" />
+                  <span>
+                    <strong>Resumo diário às {settings.digestTime}</strong>
+                    <span className="muted small block">Mesmos alertas do e-mail, no formato de mensagem.</span>
+                  </span>
+                </label>
+              </div>
+              <pre className="wa-preview">{digestText(reminders)}</pre>
+              <a
+                className="btn primary block"
+                href={waLink(settings.whatsapp, digestText(reminders))}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Icon name="whatsapp" size={16} /> Enviar resumo agora
+              </a>
+            </Premium>
           </Card>
 
           <Card title="O que avisar">

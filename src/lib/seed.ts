@@ -1,9 +1,10 @@
-import { Campaign, Deliverable, ReminderSettings } from '../types'
+import { Campaign, Deliverable, PostMetrics, Profile, ReminderSettings } from '../types'
 import { addDays, todayISO, uid } from './format'
 
 export const defaultSettings: ReminderSettings = {
   email: '',
   whatsapp: '',
+  whatsappEnabled: false,
   notifyScript: true,
   notifyApproval: true,
   notifyPost: true,
@@ -23,6 +24,8 @@ export const emptyDeliverable = (): Deliverable => ({
   scriptSent: false,
   approved: false,
   posted: false,
+  postUrl: '',
+  metrics: null,
 })
 
 export const emptyCampaign = (): Campaign => ({
@@ -45,6 +48,9 @@ export const emptyCampaign = (): Campaign => ({
   couponLink: '',
   notes: '',
   deliverables: [],
+  checklist: [],
+  script: '',
+  invoice: null,
   createdAt: todayISO(),
 })
 
@@ -54,6 +60,13 @@ export function seedCampaigns(): Campaign[] {
   const d = (n: number) => addDays(t, n)
   const del = (p: Partial<Deliverable>): Deliverable => ({ ...emptyDeliverable(), ...p })
   const camp = (p: Partial<Campaign>): Campaign => ({ ...emptyCampaign(), createdAt: d(-30), ...p })
+  const m = (views: number, likes: number, comments: number, shares: number, saves: number): PostMetrics => ({
+    views,
+    likes,
+    comments,
+    shares,
+    saves,
+  })
 
   return [
     camp({
@@ -66,7 +79,7 @@ export function seedCampaigns(): Campaign[] {
       closedAt: d(-5),
       paymentDueDate: d(36),
       briefing:
-        'Lançamento do sérum vitamina C. Tom leve, rotina de manhã. Mostrar textura e antes/depois. Não citar concorrentes.',
+        'Lançamento do sérum vitamina C. Tom leve, rotina de manhã. Mostrar textura e antes/depois. Não citar concorrentes. Usar #GlowDaManhã e marcar @glowcosmeticos.',
       couponCode: 'GLOW15',
       couponDiscount: '15%',
       couponLink: 'https://glow.exemplo/glow15',
@@ -103,8 +116,8 @@ export function seedCampaigns(): Campaign[] {
       paymentMethod: 'boleto',
       briefing: 'Pacote de fim de ano para o Nordeste. 1 reels + carrossel com dicas.',
       deliverables: [
-        del({ type: 'reels', quantity: 1, scriptDue: d(-40), approvalDue: d(-35), postDate: d(-30), scriptSent: true, approved: true, posted: true }),
-        del({ type: 'carrossel', quantity: 1, scriptDue: d(-40), approvalDue: d(-35), postDate: d(-28), scriptSent: true, approved: true, posted: true }),
+        del({ type: 'reels', quantity: 1, scriptDue: d(-40), approvalDue: d(-35), postDate: d(-30), scriptSent: true, approved: true, posted: true, postUrl: 'https://instagram.com/reel/exemplo1', metrics: m(184000, 12400, 380, 2100, 3900) }),
+        del({ type: 'carrossel', quantity: 1, scriptDue: d(-40), approvalDue: d(-35), postDate: d(-28), scriptSent: true, approved: true, posted: true, postUrl: 'https://instagram.com/p/exemplo2', metrics: m(61000, 4800, 140, 520, 2600) }),
       ],
     }),
     camp({
@@ -115,7 +128,7 @@ export function seedCampaigns(): Campaign[] {
       closedAt: d(-18),
       paymentDueDate: d(3),
       deliverables: [
-        del({ type: 'stories', quantity: 4, scriptDue: d(-12), approvalDue: d(-10), postDate: d(-7), scriptSent: true, approved: true, posted: true }),
+        del({ type: 'stories', quantity: 4, scriptDue: d(-12), approvalDue: d(-10), postDate: d(-7), scriptSent: true, approved: true, posted: true, metrics: m(38000, 900, 60, 120, 40) }),
       ],
     }),
     camp({
@@ -127,7 +140,7 @@ export function seedCampaigns(): Campaign[] {
       paymentDueDate: d(-4),
       paidAt: d(-3),
       deliverables: [
-        del({ type: 'youtube', quantity: 1, description: 'Integração de 60s', scriptDue: d(-20), approvalDue: d(-17), postDate: d(-14), scriptSent: true, approved: true, posted: true }),
+        del({ type: 'youtube', quantity: 1, description: 'Integração de 60s', scriptDue: d(-20), approvalDue: d(-17), postDate: d(-14), scriptSent: true, approved: true, posted: true, postUrl: 'https://youtube.com/watch?v=exemplo', metrics: m(92000, 5100, 430, 310, 880) }),
       ],
     }),
     camp({
@@ -162,3 +175,48 @@ export function seedCampaigns(): Campaign[] {
     }),
   ]
 }
+
+const emptyAccount = () => ({ handle: '', followers: 0, engagement: 0 })
+
+export const emptyProfile = (): Profile => ({
+  name: '',
+  bio: '',
+  niche: '',
+  city: '',
+  contactEmail: '',
+  contactPhone: '',
+  photoUrl: '',
+  networks: { instagram: emptyAccount(), tiktok: emptyAccount(), youtube: emptyAccount() },
+  audienceFemale: 0,
+  audienceAge: '',
+  audienceCities: '',
+  priceReels: 0,
+  priceStories: 0,
+  priceTiktok: 0,
+  showCases: true,
+  cnpj: '',
+  legalName: '',
+  municipality: '',
+  defaultIssRate: 5,
+})
+
+/** Perfil de exemplo para o mídia kit não abrir vazio. */
+export const seedProfile = (): Profile => ({
+  ...emptyProfile(),
+  name: 'Bia Andrade',
+  bio: 'Skincare sem complicação, rotina real e viagens com pouco dinheiro. Conteúdo leve, honesto e que vende.',
+  niche: 'Beleza · Lifestyle · Viagem',
+  city: 'São Paulo, SP',
+  contactEmail: 'contato@biaandrade.exemplo',
+  networks: {
+    instagram: { handle: '@bia.andrade', followers: 128000, engagement: 4.8 },
+    tiktok: { handle: '@biaandrade', followers: 241000, engagement: 7.2 },
+    youtube: { handle: '', followers: 0, engagement: 0 },
+  },
+  audienceFemale: 78,
+  audienceAge: '18–34 anos (71%)',
+  audienceCities: 'São Paulo, Rio de Janeiro, Belo Horizonte',
+  priceReels: 2500,
+  priceStories: 600,
+  priceTiktok: 1800,
+})

@@ -47,6 +47,14 @@ export const DELIVERABLE_TYPES: { id: DeliverableType; label: string }[] = [
   { id: 'outro', label: 'Outro' },
 ]
 
+export interface PostMetrics {
+  views: number
+  likes: number
+  comments: number
+  shares: number
+  saves: number
+}
+
 export interface Deliverable {
   id: string
   type: DeliverableType
@@ -59,6 +67,30 @@ export interface Deliverable {
   scriptSent: boolean
   approved: boolean
   posted: boolean
+  /** Link do post publicado (Plano Creator). */
+  postUrl: string
+  metrics: PostMetrics | null
+}
+
+export interface ChecklistItem {
+  id: string
+  text: string
+  done: boolean
+}
+
+export type InvoiceStatus = 'rascunho' | 'emitida'
+
+export interface Invoice {
+  status: InvoiceStatus
+  number: string
+  issuedAt: string
+  takerName: string
+  takerDoc: string
+  takerEmail: string
+  takerAddress: string
+  description: string
+  /** Alíquota de ISS em %. */
+  issRate: number
 }
 
 export type DeliverableStep = 'scriptSent' | 'approved' | 'posted'
@@ -83,12 +115,60 @@ export interface Campaign {
   couponLink: string
   notes: string
   deliverables: Deliverable[]
+  /** Gerados pelo assistente (Plano Creator). */
+  checklist: ChecklistItem[]
+  script: string
+  invoice: Invoice | null
   createdAt: string
+}
+
+export type Network = 'instagram' | 'tiktok' | 'youtube'
+
+export const NETWORKS: { id: Network; label: string }[] = [
+  { id: 'instagram', label: 'Instagram' },
+  { id: 'tiktok', label: 'TikTok' },
+  { id: 'youtube', label: 'YouTube' },
+]
+
+export interface SocialAccount {
+  handle: string
+  followers: number
+  /** Taxa de engajamento média em %. */
+  engagement: number
+}
+
+/** Dados do creator usados no mídia kit e na nota fiscal. */
+export interface Profile {
+  name: string
+  bio: string
+  niche: string
+  city: string
+  contactEmail: string
+  contactPhone: string
+  photoUrl: string
+  networks: Record<Network, SocialAccount>
+  audienceFemale: number
+  audienceAge: string
+  audienceCities: string
+  priceReels: number
+  priceStories: number
+  priceTiktok: number
+  showCases: boolean
+  cnpj: string
+  legalName: string
+  municipality: string
+  defaultIssRate: number
+}
+
+export interface Plan {
+  active: boolean
+  since: string
 }
 
 export interface ReminderSettings {
   email: string
   whatsapp: string
+  whatsappEnabled: boolean
   notifyScript: boolean
   notifyApproval: boolean
   notifyPost: boolean

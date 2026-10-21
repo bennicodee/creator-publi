@@ -11,13 +11,19 @@ import { CalendarPage } from './pages/CalendarPage'
 import { Finance } from './pages/Finance'
 import { Reminders } from './pages/Reminders'
 import { Plan } from './pages/Plan'
+import { Metrics } from './pages/Metrics'
+import { MediaKit, MediaKitPublic } from './pages/MediaKit'
+import { Invoices } from './pages/Invoices'
 
-const NAV: { to: string; label: string; icon: IconName }[] = [
+const NAV: { to: string; label: string; icon: IconName; premium?: boolean }[] = [
   { to: '/', label: 'Início', icon: 'home' },
   { to: '/campanhas', label: 'Campanhas', icon: 'campaigns' },
   { to: '/calendario', label: 'Calendário', icon: 'calendar' },
   { to: '/financeiro', label: 'Financeiro', icon: 'money' },
   { to: '/lembretes', label: 'Lembretes', icon: 'bell' },
+  { to: '/metricas', label: 'Métricas', icon: 'chart', premium: true },
+  { to: '/midia-kit', label: 'Mídia kit', icon: 'kit', premium: true },
+  { to: '/notas', label: 'Notas fiscais', icon: 'invoice', premium: true },
 ]
 
 function Page({ path }: { path: string }) {
@@ -34,6 +40,12 @@ function Page({ path }: { path: string }) {
       return <Reminders />
     case '/plano':
       return <Plan />
+    case '/metricas':
+      return <Metrics />
+    case '/midia-kit':
+      return <MediaKit />
+    case '/notas':
+      return <Invoices />
     default:
       return <Dashboard />
   }
@@ -41,12 +53,14 @@ function Page({ path }: { path: string }) {
 
 export default function App() {
   const path = useRoute()
-  const { campaigns, settings } = useStore()
+  const { campaigns, settings, plan } = useStore()
   const urgent = useMemo(
     () => buildReminders(campaigns, todayISO(), settings).filter((r) => r.severity !== 'proximo').length,
     [campaigns, settings],
   )
   const isActive = (to: string) => (to === '/' ? path === '/' : path.startsWith(to))
+
+  if (path === '/kit') return <MediaKitPublic />
 
   return (
     <div className="shell">
@@ -61,13 +75,22 @@ export default function App() {
               <Icon name={n.icon} />
               <span>{n.label}</span>
               {n.to === '/lembretes' && urgent > 0 && <span className="nav-count">{urgent}</span>}
+              {n.premium && !plan.active && (
+                <span className="nav-lock">
+                  <Icon name="lock" size={13} />
+                </span>
+              )}
             </a>
           ))}
+          <a href="#/plano" className={`nav-link nav-plan-mobile ${isActive('/plano') ? 'active' : ''}`}>
+            <Icon name="star" />
+            <span>Plano</span>
+          </a>
         </nav>
         <a href="#/plano" className={`plan-pill ${isActive('/plano') ? 'active' : ''}`}>
           <Icon name="star" size={16} />
           <span>
-            Plano Creator <small>R$ 11,99/mês</small>
+            {plan.active ? 'Creator ativo' : 'Plano Creator'} <small>{plan.active ? 'tudo liberado ✨' : 'R$ 11,99/mês'}</small>
           </span>
         </a>
       </aside>

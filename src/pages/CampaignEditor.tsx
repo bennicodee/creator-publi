@@ -1,9 +1,25 @@
 import { useState, type ReactNode } from 'react'
 import { useStore } from '../store'
-import { Campaign, DELIVERABLE_TYPES, Deliverable, PAYMENT_METHODS, STATUSES } from '../types'
+import { Campaign, DELIVERABLE_TYPES, Deliverable, PAYMENT_METHODS, PostMetrics, STATUSES } from '../types'
 import { emptyCampaign, emptyDeliverable } from '../lib/seed'
+import { analyzeBriefing } from '../lib/assistant'
+import { uid } from '../lib/format'
 import { Card, Empty, Icon, StatusBadge } from '../components/ui'
+import { Premium, PremiumBadge } from '../components/Premium'
 import { navigate } from '../router'
+
+const METRIC_FIELDS: [keyof PostMetrics, string][] = [
+  ['views', 'Views'],
+  ['likes', 'Curtidas'],
+  ['comments', 'Coment.'],
+  ['shares', 'Compart.'],
+  ['saves', 'Salvos'],
+]
+
+const EMPTY_METRICS: PostMetrics = { views: 0, likes: 0, comments: 0, shares: 0, saves: 0 }
+
+/** Um link de post publicado já confirma a postagem. */
+const isPostUrl = (url: string) => /(instagram\.com|tiktok\.com|youtube\.com|youtu\.be)\/\S+/i.test(url)
 
 function Field({ label, children, wide }: { label: string; children: ReactNode; wide?: boolean }) {
   return (
@@ -15,11 +31,12 @@ function Field({ label, children, wide }: { label: string; children: ReactNode; 
 }
 
 export function CampaignEditor({ id }: { id: string }) {
-  const { campaigns, save, remove } = useStore()
+  const { campaigns, save, remove, plan } = useStore()
   const existing = campaigns.find((c) => c.id === id)
   const isNew = id === 'nova'
   const [draft, setDraft] = useState<Campaign>(() => existing ?? emptyCampaign())
   const [copied, setCopied] = useState(false)
+  const [newItem, setNewItem] = useState('')
 
   if (!isNew && !existing) {
     return (
@@ -32,6 +49,22 @@ export function CampaignEditor({ id }: { id: string }) {
   const set = <K extends keyof Campaign>(k: K, v: Campaign[K]) => setDraft((d) => ({ ...d, [k]: v }))
   const setDel = (delId: string, patch: Partial<Deliverable>) =>
     setDraft((d) => ({ ...d, deliverables: d.deliverables.map((x) => (x.id === delId ? { ...x, ...patch } : x)) }))
+
+  const setMetric = (d: Deliverable, key: keyof PostMetrics, value: number) =>
+    setDel(d.id, { metrics: { ...(d.metrics ?? EMPTY_METRICS), [key]: value } })
+
+  const runAssistant = () => {
+    if ((draft.checklist.length > 0 || draft.script) && !confirm('Substituir o checklist e o roteiro atuais?')) return
+    const a = analyzeBriefing(draft)
+    setDraft((d) => ({ ...d, checklist: a.checklist.map((text) => ({ id: uid(), text, done: false })), script: a.script }))
+  }
+
+  const addChecklistItem = () => {
+    const text = newItem.trim()
+    if (!text) return
+    set('checklist', [...draft.checklist, { id: uid(), text, done: false }])
+    setNewItem('')
+  }
 
   const canSave = draft.brand.trim().length > 0
 
@@ -214,6 +247,34 @@ export function CampaignEditor({ id }: { id: string }) {
                     </div>
                   ))}
                 </div>
+                <Premium feature="Link do post e métricas" compact>
+                  <div className="deliverable-post">
+                    <label className="field">
+                      <span>Link do post publicado</span>
+                      <input
+                        value={d.postUrl}
+                        placeholder="https://instagram.com/reel/…"
+                        onChange={(e) => {
+                          const postUrl = e.target.value
+                          setDel(d.id, { postUrl, posted: d.posted || isPostUrl(postUrl) })
+                        }}
+                      />
+                    </label>
+                    <div className="metrics-inputs">
+                      {METRIC_FIELDS.map(([key, label]) => (
+                        <label key={key} className="field">
+                          <span>{label}</span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={d.metrics?.[key] || ''}
+                            onChange={(e) => setMetric(d, key, Number(e.target.value))}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </Premium>
               </div>
             ))}
           </div>
@@ -267,6 +328,74 @@ export function CampaignEditor({ id }: { id: string }) {
           </div>
         </Card>
       </div>
+
+      <Card
+        title={
+          <span className="row gap">
+            <Icon name="sparkle" /> Assistente de briefing <PremiumBadge />
+          </span>
+        }
+        action={
+          plan.active && (
+            <button className="btn small primary" onClick={runAssistant} disabled={!draft.briefing.trim() && draft.deliverables.length === 0}>
+              <Icon name="sparkle" size={14} /> Gerar checklist e roteiro
+            </button>
+          )
+        }
+      >
+        <Premium
+          feature="Assistente de briefing"
+          description="Cole o briefing da marca e receba um checklist com prazos, regras do's & don'ts, cupom e um roteiro pronto pra adaptar."
+        >
+          {draft.checklist.length === 0 && !draft.script ? (
+            <Empty>Preencha o briefing e os entregáveis acima e clique em “Gerar checklist e roteiro”.</Empty>
+          ) : (
+            <div className="grid-2">
+              <div>
+                <h3>
+                  Checklist ({draft.checklist.filter((i) => i.done).length}/{draft.checklist.length})
+                </h3>
+                <ul className="checklist">
+                  {draft.checklist.map((item) => (
+                    <li key={item.id} className={item.done ? 'is-done' : ''}>
+                      <input
+                        type="checkbox"
+                        checked={item.done}
+                        onChange={() =>
+                          set('checklist', draft.checklist.map((i) => (i.id === item.id ? { ...i, done: !i.done } : i)))
+                        }
+                      />
+                      <span>{item.text}</span>
+                      <button
+                        className="icon-btn"
+                        aria-label="Remover item"
+                        onClick={() => set('checklist', draft.checklist.filter((i) => i.id !== item.id))}
+                      >
+                        <Icon name="trash" size={14} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <div className="row gap add-item">
+                  <input
+                    placeholder="Adicionar item…"
+                    value={newItem}
+                    onChange={(e) => setNewItem(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addChecklistItem()}
+                  />
+                  <button className="btn small" onClick={addChecklistItem}>
+                    <Icon name="plus" size={14} />
+                  </button>
+                </div>
+              </div>
+              <label className="field">
+                <span>Roteiro sugerido (edite à vontade)</span>
+                <textarea rows={18} className="script" value={draft.script} onChange={(e) => set('script', e.target.value)} />
+              </label>
+            </div>
+          )}
+        </Premium>
+      </Card>
 
       <div className="sticky-save">
         <button className="btn primary" onClick={onSave} disabled={!canSave}>

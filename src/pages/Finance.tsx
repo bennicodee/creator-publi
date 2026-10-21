@@ -3,6 +3,7 @@ import { useStore } from '../store'
 import { Campaign, PAYMENT_METHODS, isClosed, isReceivable } from '../types'
 import { brl, daysBetween, fmtDate, fmtMonth, monthKey, shiftMonth, todayISO } from '../lib/format'
 import { summarize } from '../lib/schedule'
+import { waLink } from '../lib/whatsapp'
 import { Card, Empty, Icon, Kpi, PageHead, StatusBadge } from '../components/ui'
 
 const methodLabel = (c: Campaign) => PAYMENT_METHODS.find((p) => p.id === c.paymentMethod)?.label ?? ''
@@ -17,7 +18,7 @@ function chargeMessage(c: Campaign, today: string) {
 }
 
 export function Finance() {
-  const { campaigns, setStatus } = useStore()
+  const { campaigns, setStatus, plan } = useStore()
   const today = todayISO()
   const [month, setMonth] = useState(monthKey(today))
   const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -118,6 +119,21 @@ export function Finance() {
                         <button className="btn small" onClick={() => copy(c)}>
                           <Icon name="copy" size={14} /> {copiedId === c.id ? 'Copiado!' : 'Cobrança'}
                         </button>
+                        {plan.active ? (
+                          <a
+                            className="btn small wa"
+                            href={waLink(c.contactPhone, chargeMessage(c, today))}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={c.contactPhone ? `Cobrar ${c.contactPhone}` : 'Escolher contato no WhatsApp'}
+                          >
+                            <Icon name="whatsapp" size={14} /> Cobrar
+                          </a>
+                        ) : (
+                          <a className="btn small locked" href="#/plano" title="Cobrança pelo WhatsApp no Plano Creator">
+                            <Icon name="lock" size={14} /> Cobrar
+                          </a>
+                        )}
                         <button className="btn small primary" onClick={() => setStatus(c.id, 'paga')}>
                           <Icon name="check" size={14} /> Recebi
                         </button>

@@ -113,6 +113,13 @@ export function buildReminders(campaigns: Campaign[], today: string, settings: R
     .sort((a, b) => order[a.severity] - order[b.severity] || a.date.localeCompare(b.date))
 }
 
+/** Texto do resumo diário, usado no e-mail e no WhatsApp. */
+export function digestText(reminders: Reminder[]) {
+  if (reminders.length === 0) return 'Bom dia! Nada pendente hoje no CreatorPubli. ✨'
+  const icon: Record<Severity, string> = { atrasado: '🔴', hoje: '🟡', proximo: '⚪' }
+  return ['Bom dia! Seu resumo do CreatorPubli:', '', ...reminders.map((r) => `${icon[r.severity]} ${r.text}`)].join('\n')
+}
+
 export interface MonthSummary {
   closed: number
   received: number

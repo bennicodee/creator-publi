@@ -1,4 +1,5 @@
 import { useStore } from '../store'
+import { useAuth } from '../auth'
 import { addDays, fmtDate, todayISO } from '../lib/format'
 import { Card, Icon, IconName, PageHead } from '../components/ui'
 
@@ -28,6 +29,7 @@ function nextBilling(since: string) {
 
 export function Plan() {
   const { plan, subscribe, cancelPlan, loadDemo, clearAll, campaigns } = useStore()
+  const { user, signOut } = useAuth()
 
   return (
     <>
@@ -102,6 +104,17 @@ export function Plan() {
             </p>
           </Card>
         </div>
+      )}
+
+      {user && (
+        <Card title="Sua conta">
+          <p className="muted small">
+            {user.name} · {user.email} · {user.provider === 'google' ? 'login com Google' : 'login com e-mail e senha'}
+          </p>
+          <button className="btn" onClick={signOut}>
+            <Icon name="logout" size={16} /> Sair
+          </button>
+        </Card>
       )}
 
       <Card title="Seus dados">

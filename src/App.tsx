@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useRoute } from './router'
 import { useStore } from './store'
+import { useAuth } from './auth'
 import { buildReminders } from './lib/schedule'
 import { todayISO } from './lib/format'
 import { Icon, IconName } from './components/ui'
@@ -15,6 +16,7 @@ import { Plan } from './pages/Plan'
 import { Metrics } from './pages/Metrics'
 import { MediaKit, MediaKitPublic } from './pages/MediaKit'
 import { Invoices } from './pages/Invoices'
+import { Login } from './pages/Login'
 
 const NAV: { to: string; label: string; icon: IconName; premium?: boolean }[] = [
   { to: '/', label: 'Início', icon: 'home' },
@@ -55,6 +57,7 @@ function Page({ path }: { path: string }) {
 export default function App() {
   const path = useRoute()
   const { campaigns, settings, plan } = useStore()
+  const { user, signOut } = useAuth()
   const urgent = useMemo(
     () => buildReminders(campaigns, todayISO(), settings).filter((r) => r.severity !== 'proximo').length,
     [campaigns, settings],
@@ -62,6 +65,7 @@ export default function App() {
   const isActive = (to: string) => (to === '/' ? path === '/' : path.startsWith(to))
 
   if (path === '/kit') return <MediaKitPublic />
+  if (!user) return <Login />
 
   return (
     <div className="shell">
@@ -93,6 +97,20 @@ export default function App() {
             {plan.active ? 'Creator ativo' : 'Plano Creator'} <small>{plan.active ? 'tudo liberado ✨' : 'R$ 11,99/mês'}</small>
           </span>
         </a>
+        <div className="user-pill">
+          {user.picture ? (
+            <img src={user.picture} alt="" referrerPolicy="no-referrer" />
+          ) : (
+            <span className="avatar">{user.name.charAt(0).toUpperCase()}</span>
+          )}
+          <span className="user-info">
+            <strong>{user.name}</strong>
+            <small>{user.email}</small>
+          </span>
+          <button className="icon-btn" onClick={signOut} title="Sair" aria-label="Sair">
+            <Icon name="logout" size={16} />
+          </button>
+        </div>
       </aside>
       <main className="content">
         <Page path={path} />

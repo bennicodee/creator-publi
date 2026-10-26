@@ -1,9 +1,11 @@
 import { useMemo } from 'react'
 import { useRoute } from './router'
-import { useStore } from './store'
+import { StoreProvider, useStore } from './store'
+import { useAuth, type User } from './auth'
 import { buildReminders } from './lib/schedule'
 import { todayISO } from './lib/format'
 import { Icon, IconName } from './components/ui'
+import { Logo } from './components/Logo'
 import { Dashboard } from './pages/Dashboard'
 import { Campaigns } from './pages/Campaigns'
 import { CampaignEditor } from './pages/CampaignEditor'
@@ -14,6 +16,8 @@ import { Plan } from './pages/Plan'
 import { Metrics } from './pages/Metrics'
 import { MediaKit, MediaKitPublic } from './pages/MediaKit'
 import { Invoices } from './pages/Invoices'
+import { Login } from './pages/Login'
+import { Account } from './pages/Account'
 
 const NAV: { to: string; label: string; icon: IconName; premium?: boolean }[] = [
   { to: '/', label: 'Início', icon: 'home' },
@@ -46,6 +50,8 @@ function Page({ path }: { path: string }) {
       return <MediaKit />
     case '/notas':
       return <Invoices />
+    case '/conta':
+      return <Account />
     default:
       return <Dashboard />
   }
@@ -53,21 +59,34 @@ function Page({ path }: { path: string }) {
 
 export default function App() {
   const path = useRoute()
-  const { campaigns, settings, plan } = useStore()
+  const { user } = useAuth()
+
+  const kit = path.match(/^\/kit\/([^/]+)$/)
+  if (kit) return <MediaKitPublic slug={decodeURIComponent(kit[1])} />
+  if (!user) return <Login />
+
+  // key: trocar de conta descarta os dados da conta anterior.
+  return (
+    <StoreProvider key={user.id}>
+      <Shell path={path} user={user} />
+    </StoreProvider>
+  )
+}
+
+function Shell({ path, user }: { path: string; user: User }) {
+  const { campaigns, settings, plan, status, error, dismissError, reload } = useStore()
+  const { signOut } = useAuth()
   const urgent = useMemo(
     () => buildReminders(campaigns, todayISO(), settings).filter((r) => r.severity !== 'proximo').length,
     [campaigns, settings],
   )
   const isActive = (to: string) => (to === '/' ? path === '/' : path.startsWith(to))
 
-  if (path === '/kit') return <MediaKitPublic />
-
   return (
     <div className="shell">
       <aside className="sidebar">
-        <a href="#/" className="logo">
-          <span className="logo-mark">P</span>
-          <span>CreatorPubli</span>
+        <a href="#/" className="logo" aria-label="CreatorPubli — início">
+          <Logo />
         </a>
         <nav>
           {NAV.map((n) => (
@@ -93,9 +112,42 @@ export default function App() {
             {plan.active ? 'Creator ativo' : 'Plano Creator'} <small>{plan.active ? 'tudo liberado ✨' : 'R$ 11,99/mês'}</small>
           </span>
         </a>
+        <div className={`user-pill ${isActive('/conta') ? 'active' : ''}`}>
+          <a href="#/conta" className="user-link" title="Minha conta">
+            {user.picture ? (
+              <img src={user.picture} alt="" referrerPolicy="no-referrer" />
+            ) : (
+              <span className="avatar">{user.name.charAt(0).toUpperCase()}</span>
+            )}
+            <span className="user-info">
+              <strong>{user.name}</strong>
+              <small>{user.email}</small>
+            </span>
+          </a>
+          <button className="icon-btn" onClick={signOut} title="Sair" aria-label="Sair">
+            <Icon name="logout" size={16} />
+          </button>
+        </div>
       </aside>
       <main className="content">
-        <Page path={path} />
+        {error && status !== 'error' && (
+          <div className="api-error" role="alert">
+            <span>{error}</span>
+            <button className="icon-btn" onClick={dismissError} aria-label="Fechar aviso">
+              ×
+            </button>
+          </div>
+        )}
+        {status === 'loading' && <p className="empty">Carregando suas campanhas…</p>}
+        {status === 'error' && (
+          <div className="empty">
+            <p>{error || 'Não foi possível carregar seus dados.'}</p>
+            <button className="btn" onClick={reload}>
+              Tentar de novo
+            </button>
+          </div>
+        )}
+        {status === 'ready' && <Page path={path} />}
       </main>
     </div>
   )

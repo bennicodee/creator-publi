@@ -40,7 +40,7 @@ export function Campaigns() {
 
   const q = query.trim().toLowerCase()
   const filtered = campaigns.filter(
-    (c) => !q || [c.brand, c.agency, c.contactName, c.couponCode].some((f) => f.toLowerCase().includes(q)),
+    (c) => !q || [c.brand, c.agency, c.couponCode].some((f) => f.toLowerCase().includes(q)),
   )
 
   const onDrop = (e: DragEvent, status: CampaignStatus) => {
@@ -170,7 +170,6 @@ export function Campaigns() {
                   </td>
                   <td>
                     {c.agency || '—'}
-                    <div className="muted small">{c.contactName}</div>
                   </td>
                   <td className="small">{c.deliverables.map(deliverableLabel).join(' + ') || '—'}</td>
                   <td>

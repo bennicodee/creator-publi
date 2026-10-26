@@ -1,14 +1,11 @@
-import { useMemo } from 'react'
-import { useStore } from '../store'
-import { NETWORKS } from '../types'
+import { NETWORKS, type Profile } from '../types'
+import type { KitCase } from '../lib/api'
 import { brl } from '../lib/format'
-import { campaignResults, compact, pct } from '../lib/metrics'
+import { compact, pct } from '../lib/metrics'
 import { waLink } from '../lib/whatsapp'
 
-/** O mídia kit renderizado, usado na prévia e na página pública. */
-export function MediaKitView() {
-  const { profile, campaigns } = useStore()
-  const cases = useMemo(() => campaignResults(campaigns).slice(0, 6), [campaigns])
+/** O mídia kit renderizado, usado na prévia (dados do painel) e na página pública (dados da API). */
+export function MediaKitView({ profile, cases }: { profile: Profile; cases: KitCase[] }) {
   const networks = NETWORKS.filter((n) => profile.networks[n.id].handle || profile.networks[n.id].followers)
   const reach = networks.reduce((a, n) => a + profile.networks[n.id].followers, 0)
   const initials = profile.name
@@ -73,10 +70,10 @@ export function MediaKitView() {
         <section className="kit-section">
           <h2>Marcas que confiaram</h2>
           <div className="kit-cases">
-            {cases.map((r) => (
-              <div key={r.campaign.id} className="kit-case">
-                <strong>{r.campaign.brand}</strong>
-                <span>{compact(r.metrics.views)} views</span>
+            {cases.map((r, i) => (
+              <div key={`${r.brand}-${i}`} className="kit-case">
+                <strong>{r.brand}</strong>
+                <span>{compact(r.views)} views</span>
                 <span>{pct(r.engagement)} engajamento</span>
               </div>
             ))}

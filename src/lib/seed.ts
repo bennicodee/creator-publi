@@ -32,7 +32,6 @@ export const emptyCampaign = (): Campaign => ({
   id: uid(),
   brand: '',
   agency: '',
-  contactName: '',
   contactEmail: '',
   contactPhone: '',
   value: 0,
@@ -72,7 +71,6 @@ export function seedCampaigns(): Campaign[] {
     camp({
       brand: 'Glow Cosméticos',
       agency: 'Agência Pulso',
-      contactName: 'Marina Souza',
       contactEmail: 'marina@pulso.com.br',
       value: 3500,
       status: 'producao',
@@ -90,7 +88,6 @@ export function seedCampaigns(): Campaign[] {
     }),
     camp({
       brand: 'FitBar Snacks',
-      contactName: 'Rafael Lima',
       contactEmail: 'rafael@fitbar.exemplo',
       value: 1800,
       status: 'aprovacao',
@@ -107,7 +104,6 @@ export function seedCampaigns(): Campaign[] {
     camp({
       brand: 'Viagem+ Turismo',
       agency: 'Hype Talents',
-      contactName: 'Carla Mendes',
       contactEmail: 'financeiro@hypetalents.exemplo',
       value: 5200,
       status: 'postada',
@@ -122,7 +118,6 @@ export function seedCampaigns(): Campaign[] {
     }),
     camp({
       brand: 'Studio Fit App',
-      contactName: 'Bruno Alves',
       value: 900,
       status: 'postada',
       closedAt: d(-18),
@@ -133,7 +128,6 @@ export function seedCampaigns(): Campaign[] {
     }),
     camp({
       brand: 'TechNest',
-      contactName: 'Júlia Prado',
       value: 2500,
       status: 'paga',
       closedAt: d(-25),
@@ -145,7 +139,6 @@ export function seedCampaigns(): Campaign[] {
     }),
     camp({
       brand: 'PetVibe',
-      contactName: 'Ana Ribeiro',
       contactPhone: '(11) 98888-0000',
       value: 1500,
       status: 'fechada',
@@ -159,7 +152,6 @@ export function seedCampaigns(): Campaign[] {
     }),
     camp({
       brand: 'Café Aurora',
-      contactName: 'Pedro Costa',
       value: 1200,
       status: 'negociando',
       notes: 'Pediram desconto de 20%. Contraproposta: manter valor e incluir 1 story extra.',
@@ -168,7 +160,6 @@ export function seedCampaigns(): Campaign[] {
     camp({
       brand: 'Moda Lume',
       agency: 'Agência Pulso',
-      contactName: 'Marina Souza',
       value: 2800,
       status: 'proposta',
       notes: 'Proposta enviada por e-mail. Aguardando retorno.',
@@ -186,6 +177,7 @@ export const emptyProfile = (): Profile => ({
   contactEmail: '',
   contactPhone: '',
   photoUrl: '',
+  publicSlug: '',
   networks: { instagram: emptyAccount(), tiktok: emptyAccount(), youtube: emptyAccount() },
   audienceFemale: 0,
   audienceAge: '',

@@ -1,4 +1,5 @@
 import { useStore } from '../store'
+import { useAuth } from '../auth'
 import { addDays, fmtDate, todayISO } from '../lib/format'
 import { Card, Icon, IconName, PageHead } from '../components/ui'
 
@@ -28,6 +29,7 @@ function nextBilling(since: string) {
 
 export function Plan() {
   const { plan, subscribe, cancelPlan, loadDemo, clearAll, campaigns } = useStore()
+  const { user, signOut } = useAuth()
 
   return (
     <>
@@ -98,14 +100,30 @@ export function Plan() {
               Assinar Plano Creator
             </button>
             <p className="muted small center">
-              Versão de demonstração: a assinatura é simulada e fica salva só neste navegador.
+              Versão de demonstração: a assinatura é simulada, sem cobrança.
             </p>
           </Card>
         </div>
       )}
 
+      {user && (
+        <Card title="Sua conta">
+          <p className="muted small">
+            {user.name} · {user.email} · {user.hasPassword && user.googleLinked ? 'login com e-mail e senha ou Google' : user.hasPassword ? 'login com e-mail e senha' : 'login com Google'}
+          </p>
+          <div className="row gap">
+            <a className="btn" href="#/conta">
+              <Icon name="kit" size={16} /> Minha conta
+            </a>
+            <button className="btn ghost" onClick={signOut}>
+              <Icon name="logout" size={16} /> Sair
+            </button>
+          </div>
+        </Card>
+      )}
+
       <Card title="Seus dados">
-        <p className="muted small">Nesta versão, tudo fica salvo apenas neste navegador ({campaigns.length} campanhas).</p>
+        <p className="muted small">Tudo fica salvo na sua conta e aparece em qualquer aparelho em que você entrar ({campaigns.length} campanhas).</p>
         <div className="row gap">
           <button className="btn" onClick={() => confirm('Substituir suas campanhas e perfil pelos dados de exemplo?') && loadDemo()}>
             Carregar exemplo

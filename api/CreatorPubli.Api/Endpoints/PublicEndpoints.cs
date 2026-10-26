@@ -22,7 +22,7 @@ public static class PublicEndpoints
         {
             var p = await db.Profiles.AsNoTracking().Include(x => x.Networks).SingleOrDefaultAsync(x => x.PublicSlug == slug);
             // Mídia kit é recurso do Plano Creator.
-            if (p is null || await AccountEndpoints.ActiveSubscription(db, p.UserId) is null) return Results.NotFound();
+            if (p is null || !await PlanEndpoints.HasActivePlan(db, p.UserId)) return Results.NotFound();
 
             var cases = new List<KitCaseDto>();
             if (p.ShowCases)

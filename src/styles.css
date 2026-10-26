@@ -296,6 +296,8 @@ input[type='checkbox'] { accent-color: var(--brand); width: 16px; height: 16px; 
 .plan-price strong { font-size: 2.6rem; letter-spacing: -0.03em; }
 .plan-price span { color: var(--muted); font-weight: 600; }
 .plan-card p { margin: 0; }
+.plan-notice { display: flex; flex-direction: column; gap: 8px; border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); background: var(--warn-soft); }
+.plan-notice p { margin: 0; }
 .check-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 0.92rem; }
 .check-list li { display: flex; align-items: center; gap: 8px; }
 .check-list svg { color: var(--good); flex-shrink: 0; }

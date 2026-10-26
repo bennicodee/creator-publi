@@ -35,6 +35,9 @@ services:
       Email__User: ${SMTP_USER:-}
       Email__Password: ${SMTP_PASSWORD:-}
       Email__From: ${SMTP_FROM:-nao-responda@creatorpubli.com}
+      MercadoPago__AccessToken: ${MP_ACCESS_TOKEN:-}
+      MercadoPago__WebhookSecret: ${MP_WEBHOOK_SECRET:-}
+      MercadoPago__TestPayerEmail: ${MP_TEST_PAYER_EMAIL:-}
       Database__MigrateOnStartup: "true"
       ReverseProxy__TrustForwardedHeaders: "true"
     ports:

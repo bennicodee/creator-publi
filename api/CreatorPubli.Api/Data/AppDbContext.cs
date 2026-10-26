@@ -23,6 +23,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Properties<DeliverableType>().HaveConversion<LowercaseEnumConverter<DeliverableType>>().HaveMaxLength(20);
         b.Properties<InvoiceStatus>().HaveConversion<LowercaseEnumConverter<InvoiceStatus>>().HaveMaxLength(20);
         b.Properties<Network>().HaveConversion<LowercaseEnumConverter<Network>>().HaveMaxLength(20);
+        b.Properties<SubscriptionStatus>().HaveConversion<LowercaseEnumConverter<SubscriptionStatus>>().HaveMaxLength(20);
         b.Properties<decimal>().HavePrecision(12, 2);
     }
 
@@ -60,9 +61,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         b.Entity<Subscription>(e =>
         {
-            // No máximo uma assinatura ativa por usuário.
+            e.ToTable(t => t.HasCheckConstraint("ck_subscriptions_status", InList<SubscriptionStatus>("status")));
+            // No máximo uma assinatura aberta (pendente, ativa ou pausada) por usuário.
             e.HasIndex(s => s.UserId).IsUnique().HasFilter("canceled_at IS NULL");
+            e.HasIndex(s => s.ProviderId).IsUnique();
             e.Property(s => s.MonthlyPrice).HasPrecision(10, 2);
+            e.Property(s => s.ProviderId).HasMaxLength(64);
+            e.Ignore(s => s.IsActive);
         });
 
         b.Entity<Campaign>(e =>

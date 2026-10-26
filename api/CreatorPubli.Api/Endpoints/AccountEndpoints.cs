@@ -9,8 +9,6 @@ namespace CreatorPubli.Api.Endpoints;
 
 public static class AccountEndpoints
 {
-    const decimal PlanPrice = 11.99m;
-
     public static void MapAccount(this IEndpointRouteBuilder app)
     {
         var profile = app.MapGroup("/api/profile").WithTags("Perfil").RequireAuthorization();
@@ -41,42 +39,8 @@ public static class AccountEndpoints
             await db.SaveChangesAsync();
             return s.ToDto();
         });
-
-        // Assinatura simulada, como no frontend: ainda não há cobrança de verdade.
-        var plan = app.MapGroup("/api/plan").WithTags("Plano").RequireAuthorization();
-
-        plan.MapGet("/", async (ClaimsPrincipal principal, AppDbContext db) =>
-            ToPlanDto(await ActiveSubscription(db, principal.UserId())));
-
-        plan.MapPost("/subscribe", async (ClaimsPrincipal principal, AppDbContext db) =>
-        {
-            var userId = principal.UserId();
-            var active = await ActiveSubscription(db, userId);
-            if (active is null)
-            {
-                active = new Subscription { Id = Guid.CreateVersion7(), UserId = userId, StartedAt = Clock.Today, MonthlyPrice = PlanPrice };
-                db.Subscriptions.Add(active);
-                await db.SaveChangesAsync();
-            }
-            return ToPlanDto(active);
-        });
-
-        plan.MapPost("/cancel", async (ClaimsPrincipal principal, AppDbContext db) =>
-        {
-            if (await ActiveSubscription(db, principal.UserId()) is { } active)
-            {
-                active.CanceledAt = Clock.Today;
-                await db.SaveChangesAsync();
-            }
-            return ToPlanDto(null);
-        });
     }
 
     static Task<Profile> LoadProfile(AppDbContext db, ClaimsPrincipal principal) =>
         db.Profiles.Include(p => p.Networks).SingleAsync(p => p.UserId == principal.UserId());
-
-    public static Task<Subscription?> ActiveSubscription(AppDbContext db, Guid userId) =>
-        db.Subscriptions.SingleOrDefaultAsync(s => s.UserId == userId && s.CanceledAt == null);
-
-    static PlanDto ToPlanDto(Subscription? s) => new(s is not null, s?.StartedAt, s?.MonthlyPrice ?? PlanPrice);
 }

@@ -123,7 +123,8 @@ const fromProfile = (p: ApiProfile): Profile => ({ ...p, publicSlug: p.publicSlu
 // Um hífen no fim (a pessoa ainda está digitando) é tirado antes de enviar.
 const toProfile = (p: Profile): ApiProfile => ({ ...p, publicSlug: p.publicSlug.replace(/-+$/, '') || null })
 
-const fromPlan = (p: { active: boolean; since: string | null }): Plan => ({ active: p.active, since: p.since ?? '' })
+type ApiPlan = Nullable<Plan, 'since' | 'checkoutUrl'>
+const fromPlan = (p: ApiPlan): Plan => ({ ...p, since: p.since ?? '', checkoutUrl: p.checkoutUrl ?? '' })
 
 export interface KitCase {
   brand: string
@@ -168,9 +169,10 @@ export const api = {
   settings: () => request<ReminderSettings>('GET', '/api/settings'),
   updateSettings: (s: ReminderSettings) => request<ReminderSettings>('PUT', '/api/settings', s),
 
-  plan: async () => fromPlan(await request<{ active: boolean; since: string | null }>('GET', '/api/plan')),
-  subscribe: async () => fromPlan(await request<{ active: boolean; since: string | null }>('POST', '/api/plan/subscribe')),
-  cancelPlan: async () => fromPlan(await request<{ active: boolean; since: string | null }>('POST', '/api/plan/cancel')),
+  plan: async () => fromPlan(await request<ApiPlan>('GET', '/api/plan')),
+  /** Com pagamento ativo, devolve checkoutUrl: a pessoa conclui a assinatura na página do Mercado Pago. */
+  subscribe: async () => fromPlan(await request<ApiPlan>('POST', '/api/plan/subscribe')),
+  cancelPlan: async () => fromPlan(await request<ApiPlan>('POST', '/api/plan/cancel')),
 
   publicKit: async (slug: string): Promise<PublicKit> => {
     const { cases, ...p } = await request<Omit<Profile, 'publicSlug' | 'showCases' | 'cnpj' | 'legalName' | 'municipality' | 'defaultIssRate'> & { cases: KitCase[] }>(

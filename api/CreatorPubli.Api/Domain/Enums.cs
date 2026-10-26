@@ -12,3 +12,5 @@ public enum DeliverableType { Reels, Stories, Feed, Carrossel, Tiktok, Youtube, 
 public enum InvoiceStatus { Rascunho, Emitida }
 
 public enum Network { Instagram, Tiktok, Youtube }
+
+public enum SubscriptionStatus { Pending, Authorized, Paused, Cancelled }

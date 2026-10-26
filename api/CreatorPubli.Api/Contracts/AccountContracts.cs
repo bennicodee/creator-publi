@@ -70,7 +70,8 @@ public record ReminderSettingsDto(
     [Range(0, 30)] int DaysBefore,
     TimeOnly DigestTime);
 
-public record PlanDto(bool Active, DateOnly? Since, decimal MonthlyPrice);
+// Status: none, pending (pagamento iniciado), authorized (ativo), paused. CheckoutUrl: retomar pagamento pendente.
+public record PlanDto(bool Active, DateOnly? Since, decimal MonthlyPrice, string Status, bool PaymentsEnabled, string? CheckoutUrl);
 
 public static class AccountMapping
 {

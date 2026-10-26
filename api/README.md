@@ -57,6 +57,9 @@ users ──1:1── profiles ──1:N── social_accounts      (Profile.net
 | POST | `/api/auth/login` | Login com e-mail e senha |
 | POST | `/api/auth/google` | Login com o `credential` do botão do Google (validado no servidor) |
 | GET | `/api/auth/me` | Usuário do token |
+| PUT | `/api/account` | Altera nome e e-mail |
+| PUT | `/api/account/password` | Troca a senha (ou cria uma, em contas só com Google) |
+| POST | `/api/account/delete` | Exclui a conta e todos os dados (confirma com senha, ou e-mail em contas Google) |
 | GET / POST | `/api/campaigns` | Lista / cria campanhas (com entregáveis, checklist e nota) |
 | GET / PUT / DELETE | `/api/campaigns/{id}` | Busca / salva inteira / remove |
 | PATCH | `/api/campaigns/{id}/status` | Move no kanban |

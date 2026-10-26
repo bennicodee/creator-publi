@@ -59,11 +59,6 @@ namespace CreatorPubli.Api.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("contact_email");
 
-                    b.Property<string>("ContactName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("contact_name");
-
                     b.Property<string>("ContactPhone")
                         .IsRequired()
                         .HasColumnType("text")

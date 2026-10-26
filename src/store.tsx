@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Campaign, CampaignStatus, Deliverable, DeliverableStep, Plan, Profile, ReminderSettings, isClosed } from './types'
-import { defaultSettings, emptyCampaign, emptyDeliverable, emptyProfile, seedCampaigns, seedProfile } from './lib/seed'
+import { defaultSettings, emptyProfile, seedCampaigns, seedProfile } from './lib/seed'
 import { todayISO } from './lib/format'
+import { api } from './lib/api'
 
 interface State {
   campaigns: Campaign[]
@@ -11,6 +12,12 @@ interface State {
 }
 
 interface Store extends State {
+  /** loading até a primeira carga da API terminar. */
+  status: 'loading' | 'ready' | 'error'
+  /** Última falha ao falar com a API; a tela mostra um aviso. */
+  error: string
+  dismissError: () => void
+  reload: () => void
   save: (c: Campaign) => void
   patchCampaign: (id: string, patch: Partial<Campaign>) => void
   patchDeliverable: (campaignId: string, deliverableId: string, patch: Partial<Deliverable>) => void
@@ -25,37 +32,17 @@ interface Store extends State {
   clearAll: () => void
 }
 
-const KEY = 'creatorpubli:v1'
+/** Campos digitados letra a letra só vão para a API depois dessa pausa. */
+const SAVE_DELAY = 600
 
-/** Completa campos que não existiam em versões anteriores dos dados salvos. */
-const migrateCampaign = (c: Campaign): Campaign => ({
-  ...emptyCampaign(),
-  ...c,
-  deliverables: (c.deliverables ?? []).map((d) => ({ ...emptyDeliverable(), ...d })),
-})
+const initial: State = { campaigns: [], settings: defaultSettings, profile: emptyProfile(), plan: { active: false, since: '' } }
 
-function load(): State {
-  try {
-    const raw = localStorage.getItem(KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<State>
-      const base = emptyProfile()
-      return {
-        campaigns: (parsed.campaigns ?? []).map(migrateCampaign),
-        settings: { ...defaultSettings, ...parsed.settings },
-        profile: parsed.profile
-          ? { ...base, ...parsed.profile, networks: { ...base.networks, ...parsed.profile.networks } }
-          : seedProfile(),
-        plan: parsed.plan ?? { active: false, since: '' },
-      }
-    }
-  } catch {
-    // storage indisponível ou corrompido: cai nos dados de exemplo
-  }
-  return { campaigns: seedCampaigns(), settings: defaultSettings, profile: seedProfile(), plan: { active: false, since: '' } }
+async function fetchAll(): Promise<State> {
+  const [campaigns, profile, settings, plan] = await Promise.all([api.campaigns(), api.profile(), api.settings(), api.plan()])
+  return { campaigns, profile, settings, plan }
 }
 
-/** Mantém closedAt/paidAt coerentes com o status. */
+/** Mantém closedAt/paidAt coerentes com o status (a API aplica a mesma regra). */
 function normalize(c: Campaign): Campaign {
   const today = todayISO()
   return {
@@ -68,52 +55,148 @@ function normalize(c: Campaign): Campaign {
 const Ctx = createContext<Store | null>(null)
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<State>(load)
+  const [state, setState] = useState<State>(initial)
+  const [status, setLoadStatus] = useState<Store['status']>('loading')
+  const [error, setError] = useState('')
+  // Estado mais recente para as gravações adiadas, que rodam fora do ciclo de render.
+  const latest = useRef(state)
+  latest.current = state
+  const timers = useRef(new Map<string, { id: ReturnType<typeof setTimeout>; run: () => void }>())
+
+  const reload = useCallback(() => {
+    fetchAll()
+      .then((s) => {
+        setState(s)
+        setLoadStatus('ready')
+      })
+      .catch((e: Error) => {
+        setError(e.message)
+        setLoadStatus((st) => (st === 'loading' ? 'error' : st))
+      })
+  }, [])
 
   useEffect(() => {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state))
-    } catch {
-      // sem persistência neste navegador
+    reload()
+    const pending = timers.current
+    // Ao sair (logout), grava o que ainda estava esperando.
+    return () => {
+      pending.forEach((t) => {
+        clearTimeout(t.id)
+        t.run()
+      })
+      pending.clear()
     }
-  }, [state])
+  }, [reload])
 
   const store = useMemo<Store>(() => {
+    /** Mostra o erro e recarrega do servidor, para a tela não ficar diferente do banco. */
+    const fail = (e: Error) => {
+      setError(e.message)
+      reload()
+    }
+
+    const later = (key: string, run: () => Promise<unknown>) => {
+      const t = timers.current
+      const prev = t.get(key)
+      if (prev) clearTimeout(prev.id)
+      const go = () => {
+        t.delete(key)
+        run().catch(fail)
+      }
+      t.set(key, { id: setTimeout(go, SAVE_DELAY), run: go })
+    }
+
+    const replaceCampaign = (id: string, next: Campaign) =>
+      setState((s) => ({ ...s, campaigns: s.campaigns.map((c) => (c.id === id ? next : c)) }))
+
     const mapCampaign = (id: string, fn: (c: Campaign) => Campaign) =>
       setState((s) => ({ ...s, campaigns: s.campaigns.map((c) => (c.id === id ? fn(c) : c)) }))
 
+    /** Grava a campanha inteira depois que a pessoa para de digitar. */
+    const saveCampaignLater = (id: string) =>
+      later(`campaign:${id}`, async () => {
+        const c = latest.current.campaigns.find((x) => x.id === id)
+        if (c) replaceCampaign(id, await api.updateCampaign(c))
+      })
+
     return {
       ...state,
-      save: (c) =>
-        setState((s) => {
-          const exists = s.campaigns.some((x) => x.id === c.id)
-          const next = normalize(c)
-          return {
-            ...s,
-            campaigns: exists ? s.campaigns.map((x) => (x.id === c.id ? next : x)) : [next, ...s.campaigns],
-          }
-        }),
-      patchCampaign: (id, patch) => mapCampaign(id, (c) => normalize({ ...c, ...patch })),
-      patchDeliverable: (campaignId, deliverableId, patch) =>
+      status,
+      error,
+      dismissError: () => setError(''),
+      reload,
+      save: (c) => {
+        const exists = state.campaigns.some((x) => x.id === c.id)
+        const next = normalize(c)
+        setState((s) => ({
+          ...s,
+          campaigns: exists ? s.campaigns.map((x) => (x.id === c.id ? next : x)) : [next, ...s.campaigns],
+        }))
+        // A resposta traz os ids definitivos de campanha, entregáveis e itens.
+        ;(exists ? api.updateCampaign(next) : api.createCampaign(next)).then((saved) => replaceCampaign(c.id, saved)).catch(fail)
+      },
+      patchCampaign: (id, patch) => {
+        mapCampaign(id, (c) => normalize({ ...c, ...patch }))
+        saveCampaignLater(id)
+      },
+      patchDeliverable: (campaignId, deliverableId, patch) => {
         mapCampaign(campaignId, (c) => ({
           ...c,
           deliverables: c.deliverables.map((d) => (d.id === deliverableId ? { ...d, ...patch } : d)),
-        })),
-      remove: (id) => setState((s) => ({ ...s, campaigns: s.campaigns.filter((c) => c.id !== id) })),
-      setStatus: (id, status) => mapCampaign(id, (c) => normalize({ ...c, status })),
-      toggleStep: (campaignId, deliverableId, step) =>
+        }))
+        saveCampaignLater(campaignId)
+      },
+      remove: (id) => {
+        setState((s) => ({ ...s, campaigns: s.campaigns.filter((c) => c.id !== id) }))
+        api.deleteCampaign(id).catch(fail)
+      },
+      setStatus: (id, status) => {
+        mapCampaign(id, (c) => normalize({ ...c, status }))
+        api.setStatus(id, status).then((saved) => replaceCampaign(id, saved)).catch(fail)
+      },
+      toggleStep: (campaignId, deliverableId, step) => {
+        const d = state.campaigns.find((c) => c.id === campaignId)?.deliverables.find((x) => x.id === deliverableId)
+        if (!d) return
+        const value = !d[step]
         mapCampaign(campaignId, (c) => ({
           ...c,
-          deliverables: c.deliverables.map((d) => (d.id === deliverableId ? { ...d, [step]: !d[step] } : d)),
-        })),
-      updateSettings: (patch) => setState((s) => ({ ...s, settings: { ...s.settings, ...patch } })),
-      updateProfile: (patch) => setState((s) => ({ ...s, profile: { ...s.profile, ...patch } })),
-      subscribe: () => setState((s) => ({ ...s, plan: { active: true, since: todayISO() } })),
-      cancelPlan: () => setState((s) => ({ ...s, plan: { active: false, since: '' } })),
-      loadDemo: () => setState((s) => ({ ...s, campaigns: seedCampaigns(), profile: seedProfile() })),
-      clearAll: () => setState((s) => ({ ...s, campaigns: [] })),
+          deliverables: c.deliverables.map((x) => (x.id === deliverableId ? { ...x, [step]: value } : x)),
+        }))
+        api.patchDeliverable(campaignId, deliverableId, { [step]: value }).catch(fail)
+      },
+      updateSettings: (patch) => {
+        setState((s) => ({ ...s, settings: { ...s.settings, ...patch } }))
+        later('settings', () => api.updateSettings(latest.current.settings))
+      },
+      updateProfile: (patch) => {
+        setState((s) => ({ ...s, profile: { ...s.profile, ...patch } }))
+        later('profile', () => api.updateProfile(latest.current.profile))
+      },
+      subscribe: () => {
+        setState((s) => ({ ...s, plan: { active: true, since: todayISO() } }))
+        api.subscribe().then((plan) => setState((s) => ({ ...s, plan }))).catch(fail)
+      },
+      cancelPlan: () => {
+        setState((s) => ({ ...s, plan: { active: false, since: '' } }))
+        api.cancelPlan().then((plan) => setState((s) => ({ ...s, plan }))).catch(fail)
+      },
+      loadDemo: async () => {
+        try {
+          await api.deleteAllCampaigns()
+          // Em sequência, para manter a ordem dos exemplos.
+          for (const c of seedCampaigns().reverse()) await api.createCampaign(c)
+          await api.updateProfile({ ...seedProfile(), publicSlug: latest.current.profile.publicSlug })
+        } catch (e) {
+          setError((e as Error).message)
+        }
+        reload()
+      },
+      clearAll: () => {
+        setState((s) => ({ ...s, campaigns: [] }))
+        api.deleteAllCampaigns().catch(fail)
+      },
     }
-  }, [state])
+  }, [state, status, error, reload])
 
   return <Ctx.Provider value={store}>{children}</Ctx.Provider>
 }

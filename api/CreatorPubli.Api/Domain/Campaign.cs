@@ -7,7 +7,6 @@ public class Campaign
 
     public string Brand { get; set; } = "";
     public string Agency { get; set; } = "";
-    public string ContactName { get; set; } = "";
     public string ContactEmail { get; set; } = "";
     public string ContactPhone { get; set; } = "";
 

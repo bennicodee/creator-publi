@@ -48,11 +48,7 @@ function GoogleButton({ onError }: { onError: (msg: string) => void }) {
         window.google.accounts.id.initialize({
           client_id: clientId,
           callback: (r) => {
-            try {
-              signInWithGoogle(r.credential)
-            } catch {
-              onError('Não foi possível entrar com o Google.')
-            }
+            signInWithGoogle(r.credential).catch((e: Error) => onError(e.message || 'Não foi possível entrar com o Google.'))
           },
         })
         window.google.accounts.id.renderButton(ref.current, {

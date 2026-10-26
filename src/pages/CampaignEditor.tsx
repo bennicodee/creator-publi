@@ -140,9 +140,6 @@ export function CampaignEditor({ id }: { id: string }) {
             <Field label="Agência">
               <input value={draft.agency} onChange={(e) => set('agency', e.target.value)} placeholder="Direto com a marca" />
             </Field>
-            <Field label="Contato">
-              <input value={draft.contactName} onChange={(e) => set('contactName', e.target.value)} />
-            </Field>
             <Field label="E-mail">
               <input type="email" value={draft.contactEmail} onChange={(e) => set('contactEmail', e.target.value)} />
             </Field>

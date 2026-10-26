@@ -44,7 +44,6 @@ public record InvoiceDto(
 public record CampaignInput(
     [Required, MaxLength(120)] string Brand,
     [MaxLength(120)] string Agency,
-    [MaxLength(120)] string ContactName,
     [MaxLength(254)] string ContactEmail,
     [MaxLength(30)] string ContactPhone,
     [Range(0, 9_999_999_999)] decimal Value,
@@ -68,7 +67,6 @@ public record CampaignDto(
     Guid Id,
     string Brand,
     string Agency,
-    string ContactName,
     string ContactEmail,
     string ContactPhone,
     decimal Value,
@@ -97,7 +95,7 @@ public record DeliverablePatch(bool? ScriptSent, bool? Approved, bool? Posted, [
 public static class CampaignMapping
 {
     public static CampaignDto ToDto(this Campaign c) => new(
-        c.Id, c.Brand, c.Agency, c.ContactName, c.ContactEmail, c.ContactPhone, c.Value, c.PaymentMethod,
+        c.Id, c.Brand, c.Agency, c.ContactEmail, c.ContactPhone, c.Value, c.PaymentMethod,
         c.PaymentDueDate, c.PaidAt, c.ClosedAt, c.Status, c.Briefing, c.BriefingLink, c.CouponCode,
         c.CouponDiscount, c.CouponLink, c.Notes, c.Script,
         [.. c.Deliverables.OrderBy(d => d.Position).Select(ToDto)],
@@ -120,7 +118,6 @@ public static class CampaignMapping
     {
         c.Brand = i.Brand.Trim();
         c.Agency = i.Agency;
-        c.ContactName = i.ContactName;
         c.ContactEmail = i.ContactEmail;
         c.ContactPhone = i.ContactPhone;
         c.Value = i.Value;

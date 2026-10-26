@@ -11,10 +11,9 @@ const methodLabel = (c: Campaign) => PAYMENT_METHODS.find((p) => p.id === c.paym
 /** Mensagem educada de cobrança, pronta para colar no WhatsApp ou e-mail. */
 function chargeMessage(c: Campaign, today: string) {
   const late = c.paymentDueDate ? daysBetween(c.paymentDueDate, today) : 0
-  const who = c.contactName ? `Oi, ${c.contactName.split(' ')[0]}!` : 'Oi, tudo bem?'
   const due = c.paymentDueDate ? ` com vencimento em ${fmtDate(c.paymentDueDate)}` : ''
   const lateText = late > 0 ? ` (em aberto há ${late} dias)` : ''
-  return `${who} Passando para lembrar do pagamento da campanha ${c.brand} no valor de ${brl(c.value)}${due}${lateText}. Consegue me confirmar a previsão? Obrigado(a)!`
+  return `Oi, tudo bem? Passando para lembrar do pagamento da campanha ${c.brand} no valor de ${brl(c.value)}${due}${lateText}. Consegue me confirmar a previsão? Obrigado(a)!`
 }
 
 export function Finance() {

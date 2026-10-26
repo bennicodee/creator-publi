@@ -84,6 +84,47 @@ public static class AuthEndpoints
         g.MapGet("/me", async (ClaimsPrincipal principal, AppDbContext db) =>
             await db.Users.FindAsync(principal.UserId()) is { } user ? Results.Ok(user.ToDto()) : Results.Unauthorized())
             .RequireAuthorization();
+
+        var account = app.MapGroup("/api/account").WithTags("Minha conta").RequireAuthorization();
+
+        account.MapPut("/", async (AccountInput input, ClaimsPrincipal principal, AppDbContext db) =>
+        {
+            if (await db.Users.FindAsync(principal.UserId()) is not { } user) return Results.Unauthorized();
+            var email = NormalizeEmail(input.Email);
+            if (email != user.Email && await db.Users.AnyAsync(u => u.Email == email))
+                return Results.Problem("Já existe uma conta com esse e-mail.", statusCode: StatusCodes.Status409Conflict);
+            user.Name = input.Name.Trim();
+            user.Email = email;
+            await db.SaveChangesAsync();
+            return Results.Ok(user.ToDto());
+        });
+
+        account.MapPut("/password", async (ChangePasswordInput input, ClaimsPrincipal principal, AppDbContext db, IPasswordHasher<User> hasher) =>
+        {
+            if (await db.Users.FindAsync(principal.UserId()) is not { } user) return Results.Unauthorized();
+            if (user.PasswordHash is not null &&
+                hasher.VerifyHashedPassword(user, user.PasswordHash, input.CurrentPassword ?? "") == PasswordVerificationResult.Failed)
+                return Results.Problem("A senha atual está incorreta.", statusCode: StatusCodes.Status400BadRequest);
+            user.PasswordHash = hasher.HashPassword(user, input.NewPassword);
+            await db.SaveChangesAsync();
+            return Results.Ok(user.ToDto());
+        });
+
+        // POST em vez de DELETE porque a confirmação vai no corpo da requisição.
+        account.MapPost("/delete", async (DeleteAccountInput input, ClaimsPrincipal principal, AppDbContext db, IPasswordHasher<User> hasher) =>
+        {
+            if (await db.Users.FindAsync(principal.UserId()) is not { } user) return Results.Unauthorized();
+            var confirmed = user.PasswordHash is not null
+                ? hasher.VerifyHashedPassword(user, user.PasswordHash, input.Password ?? "") != PasswordVerificationResult.Failed
+                : NormalizeEmail(input.Email ?? "") == user.Email;
+            if (!confirmed)
+                return Results.Problem(
+                    user.PasswordHash is not null ? "Senha incorreta." : "O e-mail digitado não confere.",
+                    statusCode: StatusCodes.Status400BadRequest);
+            // As chaves estrangeiras com ON DELETE CASCADE apagam perfil, campanhas e todo o resto.
+            await db.Users.Where(u => u.Id == user.Id).ExecuteDeleteAsync();
+            return Results.NoContent();
+        });
     }
 
     static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();

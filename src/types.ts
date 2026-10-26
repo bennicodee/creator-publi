@@ -99,7 +99,6 @@ export interface Campaign {
   id: string
   brand: string
   agency: string
-  contactName: string
   contactEmail: string
   contactPhone: string
   value: number
@@ -146,6 +145,8 @@ export interface Profile {
   contactEmail: string
   contactPhone: string
   photoUrl: string
+  /** Endereço do mídia kit público (#/kit/<slug>); vazio = não publicado. */
+  publicSlug: string
   networks: Record<Network, SocialAccount>
   audienceFemale: number
   audienceAge: string

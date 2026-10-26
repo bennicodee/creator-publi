@@ -1,20 +1,18 @@
+using CreatorPubli.Api.Contracts;
 using CreatorPubli.Api.Data;
 using CreatorPubli.Api.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace CreatorPubli.Api.Endpoints;
 
-public record KitNetworkDto(Network Network, string Handle, int Followers, decimal Engagement);
-
 public record KitCaseDto(string Brand, long Views, decimal Engagement);
 
-public record KitPriceDto(string Label, decimal Price);
-
-// O que a página pública do mídia kit mostra. Nada de CNPJ, valores fechados ou contatos das marcas.
+// O que a página pública do mídia kit mostra, no mesmo formato do Profile do frontend.
+// Nada de CNPJ, valores fechados ou contatos das marcas.
 public record PublicKitDto(
     string Name, string Bio, string Niche, string City, string ContactEmail, string ContactPhone, string PhotoUrl,
-    List<KitNetworkDto> Networks, decimal AudienceFemale, string AudienceAge, string AudienceCities,
-    List<KitPriceDto> Prices, List<KitCaseDto> Cases);
+    Dictionary<Network, SocialAccountDto> Networks, decimal AudienceFemale, string AudienceAge, string AudienceCities,
+    decimal PriceReels, decimal PriceStories, decimal PriceTiktok, List<KitCaseDto> Cases);
 
 public static class PublicEndpoints
 {
@@ -46,15 +44,11 @@ public static class PublicEndpoints
                     .Take(6)];
             }
 
-            var prices = new List<KitPriceDto> { new("Reels", p.PriceReels), new("Stories (cada)", p.PriceStories), new("TikTok", p.PriceTiktok) };
-
+            var profile = p.ToDto();
             return Results.Ok(new PublicKitDto(
                 p.Name, p.Bio, p.Niche, p.City, p.ContactEmail, p.ContactPhone, p.PhotoUrl,
-                [.. p.Networks.Where(n => n.Handle != "" || n.Followers > 0).OrderBy(n => n.Network)
-                    .Select(n => new KitNetworkDto(n.Network, n.Handle, n.Followers, n.Engagement))],
-                p.AudienceFemale, p.AudienceAge, p.AudienceCities,
-                [.. prices.Where(x => x.Price > 0)],
-                cases));
+                profile.Networks, p.AudienceFemale, p.AudienceAge, p.AudienceCities,
+                p.PriceReels, p.PriceStories, p.PriceTiktok, cases));
         }).WithTags("Público");
     }
 }

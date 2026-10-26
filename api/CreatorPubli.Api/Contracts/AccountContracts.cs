@@ -5,16 +5,26 @@ namespace CreatorPubli.Api.Contracts;
 
 // ---------- auth ----------
 
-public record RegisterInput([Required, MaxLength(120)] string Name, [Required, EmailAddress, MaxLength(254)] string Email, [Required, MinLength(6), MaxLength(128)] string Password);
+public record RegisterInput([Required, MaxLength(120)] string Name, [Required(ErrorMessage = "Informe o e-mail."), EmailAddress(ErrorMessage = "Digite um e-mail válido."), MaxLength(254)] string Email, [Required, MinLength(6, ErrorMessage = "A senha precisa ter pelo menos 6 caracteres."), MaxLength(128)] string Password);
 
 public record LoginInput([Required] string Email, [Required] string Password);
 
 // ID token (credential) devolvido pelo botão do Google Identity Services.
 public record GoogleLoginInput([Required] string Credential);
 
-public record UserDto(Guid Id, string Name, string Email, string Provider, string? Picture);
+public record UserDto(Guid Id, string Name, string Email, string Provider, string? Picture, bool HasPassword, bool GoogleLinked);
 
 public record AuthResponse(string Token, DateTimeOffset ExpiresAt, UserDto User);
+
+// ---------- minha conta ----------
+
+public record AccountInput([Required(ErrorMessage = "Informe o nome."), MaxLength(120)] string Name, [Required(ErrorMessage = "Informe o e-mail."), EmailAddress(ErrorMessage = "Digite um e-mail válido."), MaxLength(254)] string Email);
+
+// CurrentPassword é obrigatória quando a conta já tem senha; contas só com Google podem criar uma.
+public record ChangePasswordInput(string? CurrentPassword, [Required, MinLength(6, ErrorMessage = "A nova senha precisa ter pelo menos 6 caracteres."), MaxLength(128)] string NewPassword);
+
+// Contas com senha confirmam com a senha; contas só com Google confirmam digitando o e-mail.
+public record DeleteAccountInput(string? Password, string? Email);
 
 // ---------- perfil ----------
 
@@ -29,7 +39,7 @@ public record ProfileDto(
     [MaxLength(254)] string ContactEmail,
     [MaxLength(30)] string ContactPhone,
     [MaxLength(500)] string PhotoUrl,
-    [RegularExpression("^[a-z0-9](?:[a-z0-9-]{1,58}[a-z0-9])?$")] string? PublicSlug,
+    [RegularExpression("^[a-z0-9](?:[a-z0-9-]{0,58}[a-z0-9])?$")] string? PublicSlug,
     Dictionary<Network, SocialAccountDto> Networks,
     [Range(0, 100)] decimal AudienceFemale,
     [MaxLength(60)] string AudienceAge,
@@ -59,7 +69,7 @@ public record PlanDto(bool Active, DateOnly? Since, decimal MonthlyPrice);
 public static class AccountMapping
 {
     public static UserDto ToDto(this User u) =>
-        new(u.Id, u.Name, u.Email, u.PasswordHash is null ? "google" : "senha", u.PictureUrl);
+        new(u.Id, u.Name, u.Email, u.PasswordHash is null ? "google" : "senha", u.PictureUrl, u.PasswordHash is not null, u.GoogleSubject is not null);
 
     public static ProfileDto ToDto(this Profile p) => new(
         p.Name, p.Bio, p.Niche, p.City, p.ContactEmail, p.ContactPhone, p.PhotoUrl, p.PublicSlug,

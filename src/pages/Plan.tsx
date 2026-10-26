@@ -100,7 +100,7 @@ export function Plan() {
               Assinar Plano Creator
             </button>
             <p className="muted small center">
-              Versão de demonstração: a assinatura é simulada e fica salva só neste navegador.
+              Versão de demonstração: a assinatura é simulada, sem cobrança.
             </p>
           </Card>
         </div>
@@ -109,16 +109,21 @@ export function Plan() {
       {user && (
         <Card title="Sua conta">
           <p className="muted small">
-            {user.name} · {user.email} · {user.provider === 'google' ? 'login com Google' : 'login com e-mail e senha'}
+            {user.name} · {user.email} · {user.hasPassword && user.googleLinked ? 'login com e-mail e senha ou Google' : user.hasPassword ? 'login com e-mail e senha' : 'login com Google'}
           </p>
-          <button className="btn" onClick={signOut}>
-            <Icon name="logout" size={16} /> Sair
-          </button>
+          <div className="row gap">
+            <a className="btn" href="#/conta">
+              <Icon name="kit" size={16} /> Minha conta
+            </a>
+            <button className="btn ghost" onClick={signOut}>
+              <Icon name="logout" size={16} /> Sair
+            </button>
+          </div>
         </Card>
       )}
 
       <Card title="Seus dados">
-        <p className="muted small">Nesta versão, tudo fica salvo apenas neste navegador ({campaigns.length} campanhas).</p>
+        <p className="muted small">Tudo fica salvo na sua conta e aparece em qualquer aparelho em que você entrar ({campaigns.length} campanhas).</p>
         <div className="row gap">
           <button className="btn" onClick={() => confirm('Substituir suas campanhas e perfil pelos dados de exemplo?') && loadDemo()}>
             Carregar exemplo

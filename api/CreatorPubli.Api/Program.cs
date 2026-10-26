@@ -7,6 +7,7 @@ using CreatorPubli.Api.Data;
 using CreatorPubli.Api.Domain;
 using CreatorPubli.Api.Email;
 using CreatorPubli.Api.Endpoints;
+using CreatorPubli.Api.Payments;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -37,6 +38,9 @@ builder.Services.AddSingleton(config.GetSection("Email").Get<EmailOptions>() ?? 
 builder.Services.AddSingleton(config.GetSection("Frontend").Get<FrontendOptions>() ?? new FrontendOptions());
 builder.Services.AddSingleton<EmailQueue>();
 builder.Services.AddHostedService<EmailSenderService>();
+var mercadoPago = config.GetSection("MercadoPago").Get<MercadoPagoOptions>() ?? new MercadoPagoOptions();
+builder.Services.AddSingleton(mercadoPago);
+builder.Services.AddHttpClient<MercadoPagoClient>(c => c.BaseAddress = new Uri("https://api.mercadopago.com/"));
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 
 builder.Services
@@ -127,6 +131,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" })).ExcludeFromDescri
 app.MapAuth();
 app.MapCampaigns();
 app.MapAccount();
+app.MapPlan();
 app.MapPublic();
 
 app.Run();

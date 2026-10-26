@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Campaign, CampaignStatus, Deliverable, DeliverableStep, Plan, Profile, ReminderSettings, isClosed } from './types'
+import { Campaign, CampaignStatus, Deliverable, DeliverableStep, Plan, Profile, ReminderSettings, isClosed, noPlan } from './types'
 import { defaultSettings, emptyProfile, seedCampaigns, seedProfile } from './lib/seed'
 import { todayISO } from './lib/format'
 import { api } from './lib/api'
@@ -26,7 +26,8 @@ interface Store extends State {
   toggleStep: (campaignId: string, deliverableId: string, step: DeliverableStep) => void
   updateSettings: (patch: Partial<ReminderSettings>) => void
   updateProfile: (patch: Partial<Profile>) => void
-  subscribe: () => void
+  /** Com pagamento ativo, leva para a página do Mercado Pago. */
+  subscribe: () => Promise<void>
   cancelPlan: () => void
   loadDemo: () => void
   clearAll: () => void
@@ -35,7 +36,7 @@ interface Store extends State {
 /** Campos digitados letra a letra só vão para a API depois dessa pausa. */
 const SAVE_DELAY = 600
 
-const initial: State = { campaigns: [], settings: defaultSettings, profile: emptyProfile(), plan: { active: false, since: '' } }
+const initial: State = { campaigns: [], settings: defaultSettings, profile: emptyProfile(), plan: noPlan }
 
 async function fetchAll(): Promise<State> {
   const [campaigns, profile, settings, plan] = await Promise.all([api.campaigns(), api.profile(), api.settings(), api.plan()])
@@ -172,12 +173,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setState((s) => ({ ...s, profile: { ...s.profile, ...patch } }))
         later('profile', () => api.updateProfile(latest.current.profile))
       },
-      subscribe: () => {
-        setState((s) => ({ ...s, plan: { active: true, since: todayISO() } }))
-        api.subscribe().then((plan) => setState((s) => ({ ...s, plan }))).catch(fail)
+      subscribe: async () => {
+        try {
+          const plan = await api.subscribe()
+          // Pagamento real: a assinatura é concluída na página do Mercado Pago, que depois devolve para #/plano.
+          if (plan.checkoutUrl) window.location.assign(plan.checkoutUrl)
+          else setState((s) => ({ ...s, plan }))
+        } catch (e) {
+          fail(e as Error)
+        }
       },
       cancelPlan: () => {
-        setState((s) => ({ ...s, plan: { active: false, since: '' } }))
+        setState((s) => ({ ...s, plan: { ...noPlan, paymentsEnabled: s.plan.paymentsEnabled } }))
         api.cancelPlan().then((plan) => setState((s) => ({ ...s, plan }))).catch(fail)
       },
       loadDemo: async () => {

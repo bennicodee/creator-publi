@@ -71,8 +71,10 @@ users ──1:1── profiles ──1:N── social_accounts      (Profile.net
 | DELETE | `/api/campaigns` | "Começar do zero" |
 | GET / PUT | `/api/profile` | Perfil do creator (mídia kit e NF) |
 | GET / PUT | `/api/settings` | Preferências de lembrete |
-| GET | `/api/plan` | Plano atual |
-| POST | `/api/plan/subscribe`, `/api/plan/cancel` | Assina / cancela (simulado, sem cobrança) |
+| GET | `/api/plan` | Plano atual (status none, pending, authorized ou paused; consulta o Mercado Pago se estiver pendente) |
+| POST | `/api/plan/subscribe` | Com `MercadoPago:AccessToken`: cria a assinatura no Mercado Pago e devolve `checkoutUrl`; sem ele, ativa na hora (simulado) |
+| POST | `/api/plan/cancel` | Cancela (no Mercado Pago também, quando houver) |
+| POST | `/api/webhooks/mercadopago` | Avisos do Mercado Pago (evento de assinaturas), conferidos pelo `x-signature` |
 | GET | `/api/public/kit/{slug}` | Mídia kit público (sem login; só com Plano Creator ativo) |
 
 ## Produção (VPS com CloudPanel)

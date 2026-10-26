@@ -164,7 +164,15 @@ export interface Profile {
 export interface Plan {
   active: boolean
   since: string
+  /** none, pending (pagamento iniciado no Mercado Pago), authorized (ativo) ou paused. */
+  status: 'none' | 'pending' | 'authorized' | 'paused'
+  /** false = assinatura simulada (sem cobrança). */
+  paymentsEnabled: boolean
+  /** Página do Mercado Pago para concluir um pagamento pendente. */
+  checkoutUrl: string
 }
+
+export const noPlan: Plan = { active: false, since: '', status: 'none', paymentsEnabled: false, checkoutUrl: '' }
 
 export interface ReminderSettings {
   email: string

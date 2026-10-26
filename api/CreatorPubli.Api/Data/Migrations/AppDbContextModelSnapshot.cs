@@ -461,14 +461,29 @@ namespace CreatorPubli.Api.Data.Migrations
                         .HasColumnType("date")
                         .HasColumnName("canceled_at");
 
+                    b.Property<string>("CheckoutUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("checkout_url");
+
                     b.Property<decimal>("MonthlyPrice")
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)")
                         .HasColumnName("monthly_price");
 
+                    b.Property<string>("ProviderId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("provider_id");
+
                     b.Property<DateOnly>("StartedAt")
                         .HasColumnType("date")
                         .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
@@ -477,12 +492,19 @@ namespace CreatorPubli.Api.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_subscriptions");
 
+                    b.HasIndex("ProviderId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_subscriptions_provider_id");
+
                     b.HasIndex("UserId")
                         .IsUnique()
                         .HasDatabaseName("ix_subscriptions_user_id")
                         .HasFilter("canceled_at IS NULL");
 
-                    b.ToTable("subscriptions", (string)null);
+                    b.ToTable("subscriptions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_subscriptions_status", "status IN ('pending', 'authorized', 'paused', 'cancelled')");
+                        });
                 });
 
             modelBuilder.Entity("CreatorPubli.Api.Domain.User", b =>

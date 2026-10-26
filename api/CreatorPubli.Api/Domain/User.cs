@@ -29,7 +29,8 @@ public class User
     };
 }
 
-// Plano Creator. Assinatura ativa = sem CanceledAt; cancelamentos ficam no histórico.
+// Plano Creator. "Aberta" = sem CanceledAt (no máximo uma por usuário); só libera os recursos
+// quando Authorized. Cancelamentos ficam no histórico.
 public class Subscription
 {
     public Guid Id { get; set; }
@@ -37,4 +38,11 @@ public class Subscription
     public DateOnly StartedAt { get; set; }
     public DateOnly? CanceledAt { get; set; }
     public decimal MonthlyPrice { get; set; }
+    public SubscriptionStatus Status { get; set; } = SubscriptionStatus.Authorized;
+    // Id da assinatura ("preapproval") no Mercado Pago; nulo na assinatura simulada.
+    public string? ProviderId { get; set; }
+    // Página de pagamento do Mercado Pago, para retomar uma assinatura pendente.
+    public string? CheckoutUrl { get; set; }
+
+    public bool IsActive => CanceledAt is null && Status == SubscriptionStatus.Authorized;
 }

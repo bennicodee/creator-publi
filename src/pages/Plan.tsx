@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
 import { SignOutButton } from '../components/SignOutButton'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import { addDays, fmtDate, todayISO } from '../lib/format'
 import { Card, Icon, IconName, PageHead } from '../components/ui'
 
@@ -29,12 +31,66 @@ function nextBilling(since: string) {
 }
 
 export function Plan() {
-  const { plan, subscribe, cancelPlan, loadDemo, clearAll, campaigns } = useStore()
+  const { plan, subscribe, cancelPlan, loadDemo, clearAll, campaigns, reload } = useStore()
   const { user } = useAuth()
+  const [subscribing, setSubscribing] = useState(false)
+  const [confirmCancel, setConfirmCancel] = useState(false)
+
+  const startSubscription = async () => {
+    setSubscribing(true)
+    await subscribe()
+    // Se foi para o Mercado Pago, a página muda; se não (simulado ou erro), libera o botão.
+    setSubscribing(false)
+  }
 
   return (
     <>
       <PageHead title="Plano" subtitle="Feito por creator, pra creator." />
+
+      {plan.status === 'pending' && (
+        <Card className="plan-notice">
+          <strong>Seu pagamento está em andamento</strong>
+          <p className="muted small">
+            Assim que o Mercado Pago confirmar, o Plano Creator é liberado automaticamente. Se você já pagou, pode levar alguns
+            instantes.
+          </p>
+          <div className="row gap">
+            {plan.checkoutUrl && (
+              <a className="btn primary" href={plan.checkoutUrl}>
+                Continuar pagamento
+              </a>
+            )}
+            <button className="btn" onClick={reload}>
+              Já paguei, atualizar
+            </button>
+          </div>
+        </Card>
+      )}
+
+      {plan.status === 'paused' && (
+        <Card className="plan-notice">
+          <strong>Sua assinatura está pausada</strong>
+          <p className="muted small">
+            O Mercado Pago pausou a cobrança (por exemplo, por um problema no cartão). Confira sua assinatura no app ou no site do
+            Mercado Pago para reativar.
+          </p>
+        </Card>
+      )}
+
+      <ConfirmDialog
+        open={confirmCancel}
+        title="Cancelar o Plano Creator?"
+        confirmLabel="Cancelar assinatura"
+        cancelLabel="Manter plano"
+        onConfirm={() => {
+          setConfirmCancel(false)
+          cancelPlan()
+        }}
+        onCancel={() => setConfirmCancel(false)}
+      >
+        Os recursos premium serão bloqueados
+        {plan.paymentsEnabled ? ' e as próximas cobranças no Mercado Pago, canceladas.' : '.'}
+      </ConfirmDialog>
 
       {plan.active ? (
         <Card className="plan-active">
@@ -55,10 +111,7 @@ export function Plan() {
               </a>
             ))}
           </div>
-          <button
-            className="btn ghost danger small self-start"
-            onClick={() => confirm('Cancelar o Plano Creator? Os recursos premium serão bloqueados.') && cancelPlan()}
-          >
+          <button className="btn ghost danger small self-start" onClick={() => setConfirmCancel(true)}>
             Cancelar assinatura
           </button>
         </Card>
@@ -97,11 +150,13 @@ export function Plan() {
                 </li>
               ))}
             </ul>
-            <button className="btn primary block" onClick={subscribe}>
-              Assinar Plano Creator
+            <button className="btn primary block" onClick={startSubscription} disabled={subscribing || plan.status === 'pending'}>
+              {subscribing ? 'Abrindo pagamento…' : 'Assinar Plano Creator'}
             </button>
             <p className="muted small center">
-              Versão de demonstração: a assinatura é simulada, sem cobrança.
+              {plan.paymentsEnabled
+                ? 'Pagamento seguro pelo Mercado Pago. Cobrança mensal no cartão; cancele quando quiser.'
+                : 'Versão de demonstração: a assinatura é simulada, sem cobrança.'}
             </p>
           </Card>
         </div>

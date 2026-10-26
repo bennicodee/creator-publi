@@ -26,6 +26,12 @@ public record ChangePasswordInput(string? CurrentPassword, [Required, MinLength(
 // Contas com senha confirmam com a senha; contas só com Google confirmam digitando o e-mail.
 public record DeleteAccountInput(string? Password, string? Email);
 
+// ---------- esqueci minha senha ----------
+
+public record ForgotPasswordInput([Required(ErrorMessage = "Informe o e-mail."), EmailAddress(ErrorMessage = "Digite um e-mail válido.")] string Email);
+
+public record ResetPasswordInput([Required] string Token, [Required, MinLength(6, ErrorMessage = "A nova senha precisa ter pelo menos 6 caracteres."), MaxLength(128)] string NewPassword);
+
 // ---------- perfil ----------
 
 public record SocialAccountDto([MaxLength(60)] string Handle, [Range(0, int.MaxValue)] int Followers, [Range(0, 100)] decimal Engagement);

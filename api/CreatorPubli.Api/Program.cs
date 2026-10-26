@@ -5,6 +5,7 @@ using CreatorPubli.Api.Auth;
 using CreatorPubli.Api.Contracts;
 using CreatorPubli.Api.Data;
 using CreatorPubli.Api.Domain;
+using CreatorPubli.Api.Email;
 using CreatorPubli.Api.Endpoints;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -32,6 +33,10 @@ if (jwt.Key.Length < 32) throw new InvalidOperationException("Configure Jwt:Key 
 builder.Services.AddSingleton(jwt);
 builder.Services.AddSingleton(config.GetSection("Google").Get<GoogleOptions>() ?? new GoogleOptions());
 builder.Services.AddSingleton<TokenService>();
+builder.Services.AddSingleton(config.GetSection("Email").Get<EmailOptions>() ?? new EmailOptions());
+builder.Services.AddSingleton(config.GetSection("Frontend").Get<FrontendOptions>() ?? new FrontendOptions());
+builder.Services.AddSingleton<EmailQueue>();
+builder.Services.AddHostedService<EmailSenderService>();
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 
 builder.Services

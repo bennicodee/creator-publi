@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { GOOGLE_CLIENT_ID, useAuth } from '../auth'
+import { api } from '../lib/api'
 import { Logo } from '../components/Logo'
 import { Icon } from '../components/ui'
 
@@ -87,9 +88,82 @@ function GoogleG() {
   )
 }
 
+/** Pede o link de redefinição. A resposta é sempre a mesma, exista ou não a conta. */
+function ForgotPassword({ initialEmail, onBack }: { initialEmail: string; onBack: () => void }) {
+  const [email, setEmail] = useState(initialEmail)
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setBusy(true)
+    try {
+      await api.forgotPassword(email)
+      setSent(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Algo deu errado. Tente de novo.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="auth-page">
+      <div className="auth-card card">
+        <div className="auth-logo">
+          <Logo />
+        </div>
+        <div className="auth-intro">
+          <h1>{sent ? 'Confira seu e-mail' : 'Esqueceu a senha?'}</h1>
+          <p className="muted">
+            {sent
+              ? `Se existir uma conta com ${email.trim()}, enviamos um link para criar uma nova senha. Ele vale por 1 hora.`
+              : 'Digite o e-mail da sua conta e enviamos um link para você criar uma nova senha.'}
+          </p>
+        </div>
+
+        {sent ? (
+          <div className="auth-form">
+            <p className="muted small center">
+              Não chegou? Olhe a caixa de spam ou{' '}
+              <button type="button" className="link-btn" onClick={() => setSent(false)}>
+                tente de novo
+              </button>
+              .
+            </p>
+          </div>
+        ) : (
+          <form className="auth-form" onSubmit={submit}>
+            <label className="field">
+              E-mail
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" autoFocus required />
+            </label>
+            {error && (
+              <p className="auth-error" role="alert">
+                {error}
+              </p>
+            )}
+            <button type="submit" className="btn primary block" disabled={busy}>
+              {busy ? 'Enviando…' : 'Enviar link'}
+            </button>
+          </form>
+        )}
+
+        <p className="muted small center auth-switch">
+          <button type="button" className="link-btn" onClick={onBack}>
+            ← Voltar para o login
+          </button>
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export function Login() {
   const { signIn, signUp } = useAuth()
-  const [mode, setMode] = useState<'entrar' | 'criar'>('entrar')
+  const [mode, setMode] = useState<'entrar' | 'criar' | 'esqueci'>('entrar')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -120,6 +194,8 @@ export function Login() {
       setBusy(false)
     }
   }
+
+  if (mode === 'esqueci') return <ForgotPassword initialEmail={email} onBack={() => switchMode('entrar')} />
 
   return (
     <div className="auth-page">
@@ -175,6 +251,11 @@ export function Login() {
               </button>
             </span>
           </label>
+          {!creating && (
+            <button type="button" className="link-btn forgot-link" onClick={() => switchMode('esqueci')}>
+              Esqueci minha senha
+            </button>
+          )}
           {creating && (
             <label className="field">
               Confirmar senha

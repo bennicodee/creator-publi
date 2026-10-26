@@ -329,6 +329,7 @@ input[type='checkbox'] { accent-color: var(--brand); width: 16px; height: 16px; 
 .auth-error { margin: 0; padding: 9px 12px; border-radius: 9px; background: var(--bad-soft); color: var(--bad); font-size: 0.85rem; }
 .auth-switch { margin: 0; }
 .link-btn { border: 0; background: none; padding: 0; color: var(--brand); font-weight: 600; cursor: pointer; }
+.forgot-link { align-self: flex-end; font-size: 0.82rem; margin-top: -6px; }
 
 .api-error { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px 10px 14px; border-radius: 10px; background: var(--bad-soft); color: var(--bad); font-size: 0.88rem; border: 1px solid color-mix(in srgb, var(--bad) 35%, var(--border)); }
 .api-error .icon-btn { background: transparent; border-color: transparent; color: var(--bad); font-size: 1.1rem; }
@@ -356,6 +357,17 @@ input[type='checkbox'] { accent-color: var(--brand); width: 16px; height: 16px; 
 .danger-list { margin: 0; padding-left: 18px; color: var(--muted); font-size: 0.88rem; display: flex; flex-direction: column; gap: 4px; }
 .btn.danger-solid { background: var(--bad); border-color: var(--bad); color: #fff; }
 .btn.danger-solid:hover { filter: brightness(1.08); color: #fff; }
+
+/* ---------- janela de confirmação ---------- */
+.confirm-dialog { padding: 0; border: 0; background: transparent; color: var(--text); max-width: calc(100vw - 32px); }
+.confirm-dialog::backdrop { background: rgb(8 6 15 / 0.65); backdrop-filter: blur(2px); }
+.confirm-dialog[open] { animation: confirm-in 0.15s ease-out; }
+.confirm-box { width: 380px; max-width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 20px 50px rgb(0 0 0 / 0.45); }
+.confirm-box h2 { font-size: 1.1rem; }
+.confirm-box .muted { font-size: 0.9rem; }
+.confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+@keyframes confirm-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .confirm-dialog[open] { animation: none; } }
 
 /* ---------- responsivo ---------- */
 @media (max-width: 1080px) {

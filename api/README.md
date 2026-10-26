@@ -8,7 +8,7 @@ Pré-requisitos: .NET SDK 10 e Docker.
 
 ```bash
 cd api
-docker compose up -d          # PostgreSQL em localhost:5432
+docker compose up -d          # PostgreSQL em localhost:5432 e Mailpit (e-mails de teste em http://localhost:8025)
 dotnet tool restore           # instala o dotnet-ef deste repositório
 dotnet run --project CreatorPubli.Api
 ```
@@ -25,6 +25,8 @@ ou `/api/auth/login`, copie o `token` e use como Bearer.
 | `Jwt:Key` | Assinatura dos tokens (mín. 32 caracteres) | `Jwt__Key` |
 | `Google:ClientId` | Valida o login com Google; o mesmo `VITE_GOOGLE_CLIENT_ID` do frontend | `Google__ClientId` |
 | `Cors:Origins` | Endereços do frontend autorizados | `Cors__Origins__0`, `Cors__Origins__1`… |
+| `Email:Host`, `Port`, `User`, `Password`, `From` | Servidor SMTP para os e-mails do app (vazio = não envia) | `Email__Host`… (no compose: `SMTP_HOST`…) |
+| `Frontend:BaseUrl` | Endereço do app usado nos links dos e-mails | `Frontend__BaseUrl` (no compose: `FRONTEND_URL`) |
 
 Os valores de `appsettings.Development.json` são só para desenvolvimento: nunca use essa chave JWT em produção.
 
@@ -57,6 +59,8 @@ users ──1:1── profiles ──1:N── social_accounts      (Profile.net
 | POST | `/api/auth/login` | Login com e-mail e senha |
 | POST | `/api/auth/google` | Login com o `credential` do botão do Google (validado no servidor) |
 | GET | `/api/auth/me` | Usuário do token |
+| POST | `/api/auth/forgot-password` | Envia o link de redefinição por e-mail (sempre 204, exista ou não a conta) |
+| POST | `/api/auth/reset-password` | Troca a senha com o token do e-mail (vale 1 hora, uso único) e devolve a sessão |
 | PUT | `/api/account` | Altera nome e e-mail |
 | PUT | `/api/account/password` | Troca a senha (ou cria uma, em contas só com Google) |
 | POST | `/api/account/delete` | Exclui a conta e todos os dados (confirma com senha, ou e-mail em contas Google) |

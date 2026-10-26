@@ -59,8 +59,14 @@ public static class AuthEndpoints
                 payload = await GoogleJsonWebSignature.ValidateAsync(input.Credential,
                     new GoogleJsonWebSignature.ValidationSettings { Audience = [google.ClientId] });
             }
-            catch (InvalidJwtException)
+            catch (HttpRequestException)
             {
+                // Falha ao baixar as chaves públicas do Google para conferir a assinatura.
+                return Results.Problem("Não foi possível falar com o Google. Tente de novo.", statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+            catch (Exception e) when (e is InvalidJwtException or FormatException or ArgumentException or Newtonsoft.Json.JsonException)
+            {
+                // Token malformado também chega aqui (a biblioteca lança FormatException, não InvalidJwtException).
                 return Results.Problem("Token do Google inválido.", statusCode: StatusCodes.Status401Unauthorized);
             }
             if (!payload.EmailVerified)

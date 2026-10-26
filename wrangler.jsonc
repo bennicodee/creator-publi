@@ -1,0 +1,10 @@
+// Publicação do frontend no Cloudflare Workers (site estático gerado pelo Vite em dist/).
+{
+  "name": "creator-publi",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./dist",
+    // O app usa rotas com # (#/campanhas), mas isso garante que qualquer caminho abra o index.html.
+    "not_found_handling": "single-page-application"
+  }
+}

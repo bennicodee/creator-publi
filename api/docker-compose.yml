@@ -15,5 +15,12 @@ services:
       interval: 5s
       retries: 10
 
+  # Caixa de entrada falsa para testar e-mails: SMTP em localhost:1025, caixa em http://localhost:8025
+  mail:
+    image: axllent/mailpit:v1.21
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
   pgdata:

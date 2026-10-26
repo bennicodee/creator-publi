@@ -29,6 +29,12 @@ services:
       Cors__Origins__0: ${CORS_ORIGIN_1:-https://creatorpubli.com}
       Cors__Origins__1: ${CORS_ORIGIN_2:-https://www.creatorpubli.com}
       Cors__Origins__2: ${CORS_ORIGIN_3:-}
+      Frontend__BaseUrl: ${FRONTEND_URL:-https://creatorpubli.com}
+      Email__Host: ${SMTP_HOST:-}
+      Email__Port: ${SMTP_PORT:-587}
+      Email__User: ${SMTP_USER:-}
+      Email__Password: ${SMTP_PASSWORD:-}
+      Email__From: ${SMTP_FROM:-nao-responda@creatorpubli.com}
       Database__MigrateOnStartup: "true"
       ReverseProxy__TrustForwardedHeaders: "true"
     ports:

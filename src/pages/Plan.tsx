@@ -1,5 +1,6 @@
 import { useStore } from '../store'
 import { useAuth } from '../auth'
+import { SignOutButton } from '../components/SignOutButton'
 import { addDays, fmtDate, todayISO } from '../lib/format'
 import { Card, Icon, IconName, PageHead } from '../components/ui'
 
@@ -29,7 +30,7 @@ function nextBilling(since: string) {
 
 export function Plan() {
   const { plan, subscribe, cancelPlan, loadDemo, clearAll, campaigns } = useStore()
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
 
   return (
     <>
@@ -115,9 +116,9 @@ export function Plan() {
             <a className="btn" href="#/conta">
               <Icon name="kit" size={16} /> Minha conta
             </a>
-            <button className="btn ghost" onClick={signOut}>
+            <SignOutButton className="btn ghost">
               <Icon name="logout" size={16} /> Sair
-            </button>
+            </SignOutButton>
           </div>
         </Card>
       )}

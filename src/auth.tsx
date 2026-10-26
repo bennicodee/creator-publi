@@ -13,6 +13,8 @@ interface Auth {
   signUp: (name: string, email: string, password: string) => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
   signInWithGoogle: (credential: string) => Promise<void>
+  /** Define a senha nova com o token do e-mail de "esqueci minha senha" e já entra. */
+  resetPassword: (token: string, newPassword: string) => Promise<void>
   signOut: () => void
   /** Atualiza nome/e-mail/senha mostrados no app depois de salvar em Minha conta. */
   setUser: (user: User) => void
@@ -69,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUp: async (name, email, password) => start(await api.register(name, email, password)),
       signIn: async (email, password) => start(await api.login(email, password)),
       signInWithGoogle: async (credential) => start(await api.google(credential)),
+      resetPassword: async (token, newPassword) => start(await api.resetPassword(token, newPassword)),
       signOut: () => setSession(null),
       setUser: (user) => setSession((s) => s && { ...s, user }),
     }

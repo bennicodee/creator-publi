@@ -1,8 +1,12 @@
+using System.Buffers.Text;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using CreatorPubli.Api.Auth;
 using CreatorPubli.Api.Contracts;
 using CreatorPubli.Api.Data;
 using CreatorPubli.Api.Domain;
+using CreatorPubli.Api.Email;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -89,6 +93,49 @@ public static class AuthEndpoints
             return Results.Ok(tokens.Issue(user));
         });
 
+        // Sempre 204, exista ou não a conta: a resposta não revela quais e-mails estão cadastrados.
+        limited.MapPost("/forgot-password", async (ForgotPasswordInput input, AppDbContext db, EmailQueue emails, FrontendOptions frontend) =>
+        {
+            var email = NormalizeEmail(input.Email);
+            if (await db.Users.SingleOrDefaultAsync(u => u.Email == email) is { } user)
+            {
+                // Um pedido novo invalida os links anteriores que ainda não foram usados.
+                await db.PasswordResetTokens.Where(t => t.UserId == user.Id && t.UsedAt == null).ExecuteDeleteAsync();
+
+                var token = Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(32));
+                var now = DateTimeOffset.UtcNow;
+                db.PasswordResetTokens.Add(new PasswordResetToken
+                {
+                    Id = Guid.CreateVersion7(),
+                    UserId = user.Id,
+                    TokenHash = HashToken(token),
+                    CreatedAt = now,
+                    ExpiresAt = now.AddMinutes(ResetLinkMinutes),
+                });
+                await db.SaveChangesAsync();
+
+                var link = $"{frontend.BaseUrl.TrimEnd('/')}/#/redefinir-senha/{token}";
+                emails.Enqueue(PasswordResetEmail.Build(user.Email, user.Name, link, ResetLinkMinutes));
+            }
+            return Results.NoContent();
+        });
+
+        // Troca a senha com o token do e-mail e já devolve a sessão (a pessoa entra direto no app).
+        limited.MapPost("/reset-password", async (ResetPasswordInput input, AppDbContext db, IPasswordHasher<User> hasher, TokenService tokens) =>
+        {
+            var hash = HashToken(input.Token);
+            var reset = await db.PasswordResetTokens.SingleOrDefaultAsync(t => t.TokenHash == hash);
+            if (reset is null || reset.UsedAt is not null || reset.ExpiresAt < DateTimeOffset.UtcNow ||
+                await db.Users.FindAsync(reset.UserId) is not { } user)
+                return Results.Problem("Esse link de redefinição é inválido ou expirou. Peça um novo em \"Esqueci minha senha\".",
+                    statusCode: StatusCodes.Status400BadRequest);
+
+            user.PasswordHash = hasher.HashPassword(user, input.NewPassword);
+            reset.UsedAt = DateTimeOffset.UtcNow;
+            await db.SaveChangesAsync();
+            return Results.Ok(tokens.Issue(user));
+        });
+
         g.MapGet("/me", async (ClaimsPrincipal principal, AppDbContext db) =>
             await db.Users.FindAsync(principal.UserId()) is { } user ? Results.Ok(user.ToDto()) : Results.Unauthorized())
             .RequireAuthorization();
@@ -136,5 +183,9 @@ public static class AuthEndpoints
         });
     }
 
+    const int ResetLinkMinutes = 60;
+
     static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
+
+    static string HashToken(string token) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 }

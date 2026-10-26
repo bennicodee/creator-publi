@@ -13,6 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<Deliverable> Deliverables => Set<Deliverable>();
     public DbSet<ChecklistItem> ChecklistItems => Set<ChecklistItem>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder b)
     {
@@ -105,6 +106,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         });
 
         b.Entity<ChecklistItem>().HasIndex(i => new { i.CampaignId, i.Position });
+
+        b.Entity<PasswordResetToken>(e =>
+        {
+            e.HasIndex(t => t.TokenHash).IsUnique();
+            e.Property(t => t.TokenHash).HasMaxLength(64);
+            e.HasOne<User>().WithMany().HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
     }
 
     // Ex.: status IN ('proposta', 'negociando', ...)

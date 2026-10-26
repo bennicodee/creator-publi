@@ -144,6 +144,9 @@ export const api = {
   login: (email: string, password: string) => request<AuthResponse>('POST', '/api/auth/login', { email, password }),
   google: (credential: string) => request<AuthResponse>('POST', '/api/auth/google', { credential }),
   me: () => request<User>('GET', '/api/auth/me'),
+  forgotPassword: (email: string) => request<void>('POST', '/api/auth/forgot-password', { email }),
+  resetPassword: (token: string, newPassword: string) =>
+    request<AuthResponse>('POST', '/api/auth/reset-password', { token, newPassword }),
   updateAccount: (name: string, email: string) => request<User>('PUT', '/api/account', { name, email }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<User>('PUT', '/api/account/password', { currentPassword, newPassword }),

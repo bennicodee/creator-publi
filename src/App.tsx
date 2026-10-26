@@ -6,6 +6,7 @@ import { buildReminders } from './lib/schedule'
 import { todayISO } from './lib/format'
 import { Icon, IconName } from './components/ui'
 import { Logo } from './components/Logo'
+import { SignOutButton } from './components/SignOutButton'
 import { Dashboard } from './pages/Dashboard'
 import { Campaigns } from './pages/Campaigns'
 import { CampaignEditor } from './pages/CampaignEditor'
@@ -17,6 +18,7 @@ import { Metrics } from './pages/Metrics'
 import { MediaKit, MediaKitPublic } from './pages/MediaKit'
 import { Invoices } from './pages/Invoices'
 import { Login } from './pages/Login'
+import { ResetPassword } from './pages/ResetPassword'
 import { Account } from './pages/Account'
 
 const NAV: { to: string; label: string; icon: IconName; premium?: boolean }[] = [
@@ -63,6 +65,8 @@ export default function App() {
 
   const kit = path.match(/^\/kit\/([^/]+)$/)
   if (kit) return <MediaKitPublic slug={decodeURIComponent(kit[1])} />
+  const reset = path.match(/^\/redefinir-senha\/([^/]+)$/)
+  if (reset) return <ResetPassword token={reset[1]} />
   if (!user) return <Login />
 
   // key: trocar de conta descarta os dados da conta anterior.
@@ -75,7 +79,6 @@ export default function App() {
 
 function Shell({ path, user }: { path: string; user: User }) {
   const { campaigns, settings, plan, status, error, dismissError, reload } = useStore()
-  const { signOut } = useAuth()
   const urgent = useMemo(
     () => buildReminders(campaigns, todayISO(), settings).filter((r) => r.severity !== 'proximo').length,
     [campaigns, settings],
@@ -124,9 +127,9 @@ function Shell({ path, user }: { path: string; user: User }) {
               <small>{user.email}</small>
             </span>
           </a>
-          <button className="icon-btn" onClick={signOut} title="Sair" aria-label="Sair">
+          <SignOutButton className="icon-btn" title="Sair">
             <Icon name="logout" size={16} />
-          </button>
+          </SignOutButton>
         </div>
       </aside>
       <main className="content">

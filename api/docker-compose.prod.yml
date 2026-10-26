@@ -1,0 +1,38 @@
+# Produção (VPS): docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+# O banco não abre porta nenhuma; a API só escuta em 127.0.0.1 e o nginx do CloudPanel faz o HTTPS.
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: creatorpubli
+      POSTGRES_USER: creatorpubli
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no .env.production}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U creatorpubli"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: ./CreatorPubli.Api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Host=db;Port=5432;Database=creatorpubli;Username=creatorpubli;Password=${DB_PASSWORD}
+      Jwt__Key: ${JWT_KEY:?defina JWT_KEY no .env.production}
+      Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Cors__Origins__0: ${CORS_ORIGIN_1:-https://creatorpubli.com}
+      Cors__Origins__1: ${CORS_ORIGIN_2:-https://www.creatorpubli.com}
+      Cors__Origins__2: ${CORS_ORIGIN_3:-}
+      Database__MigrateOnStartup: "true"
+      ReverseProxy__TrustForwardedHeaders: "true"
+    ports:
+      - "127.0.0.1:5080:8080"
+
+volumes:
+  pgdata:

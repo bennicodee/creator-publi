@@ -71,6 +71,24 @@ users ──1:1── profiles ──1:N── social_accounts      (Profile.net
 | POST | `/api/plan/subscribe`, `/api/plan/cancel` | Assina / cancela (simulado, sem cobrança) |
 | GET | `/api/public/kit/{slug}` | Mídia kit público (sem login; só com Plano Creator ativo) |
 
+## Produção (VPS com CloudPanel)
+
+A API e o banco rodam no Docker; o nginx do CloudPanel recebe `https://api.creatorpubli.com` e repassa
+para `127.0.0.1:5080`. O banco não abre porta nenhuma para fora.
+
+```bash
+# no servidor, em /opt/creatorpubli (cópia do repositório)
+cd api
+cp .env.production.example .env.production   # preencha: openssl rand -base64 48
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+```
+
+- As migrations rodam ao subir (`Database__MigrateOnStartup=true`).
+- Login, cadastro, Google, troca de senha e exclusão de conta aceitam 10 tentativas por minuto por IP
+  (o IP real vem do `X-Forwarded-For` do nginx).
+- A documentação `/scalar` só existe em desenvolvimento.
+- Backup diário: [deploy/backup.sh](deploy/backup.sh) (instruções de agendamento no próprio arquivo).
+
 ## Migrations
 
 ```bash

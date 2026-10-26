@@ -14,8 +14,10 @@ public static class AuthEndpoints
     public static void MapAuth(this IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/api/auth").WithTags("Auth");
+        // Rotas que recebem senha ou token: limite de tentativas por IP (política "auth" no Program.cs).
+        var limited = g.MapGroup("").RequireRateLimiting("auth");
 
-        g.MapPost("/register", async (RegisterInput input, AppDbContext db, IPasswordHasher<User> hasher, TokenService tokens) =>
+        limited.MapPost("/register", async (RegisterInput input, AppDbContext db, IPasswordHasher<User> hasher, TokenService tokens) =>
         {
             var email = NormalizeEmail(input.Email);
             if (await db.Users.AnyAsync(u => u.Email == email))
@@ -28,7 +30,7 @@ public static class AuthEndpoints
             return Results.Ok(tokens.Issue(user));
         });
 
-        g.MapPost("/login", async (LoginInput input, AppDbContext db, IPasswordHasher<User> hasher, TokenService tokens) =>
+        limited.MapPost("/login", async (LoginInput input, AppDbContext db, IPasswordHasher<User> hasher, TokenService tokens) =>
         {
             var email = NormalizeEmail(input.Email);
             var user = await db.Users.SingleOrDefaultAsync(u => u.Email == email);
@@ -47,7 +49,7 @@ public static class AuthEndpoints
             return Results.Ok(tokens.Issue(user!));
         });
 
-        g.MapPost("/google", async (GoogleLoginInput input, AppDbContext db, GoogleOptions google, TokenService tokens) =>
+        limited.MapPost("/google", async (GoogleLoginInput input, AppDbContext db, GoogleOptions google, TokenService tokens) =>
         {
             if (string.IsNullOrEmpty(google.ClientId))
                 return Results.Problem("Login com Google não configurado no servidor.", statusCode: StatusCodes.Status503ServiceUnavailable);
@@ -92,6 +94,7 @@ public static class AuthEndpoints
             .RequireAuthorization();
 
         var account = app.MapGroup("/api/account").WithTags("Minha conta").RequireAuthorization();
+        var accountLimited = account.MapGroup("").RequireRateLimiting("auth");
 
         account.MapPut("/", async (AccountInput input, ClaimsPrincipal principal, AppDbContext db) =>
         {
@@ -105,7 +108,7 @@ public static class AuthEndpoints
             return Results.Ok(user.ToDto());
         });
 
-        account.MapPut("/password", async (ChangePasswordInput input, ClaimsPrincipal principal, AppDbContext db, IPasswordHasher<User> hasher) =>
+        accountLimited.MapPut("/password", async (ChangePasswordInput input, ClaimsPrincipal principal, AppDbContext db, IPasswordHasher<User> hasher) =>
         {
             if (await db.Users.FindAsync(principal.UserId()) is not { } user) return Results.Unauthorized();
             if (user.PasswordHash is not null &&
@@ -117,7 +120,7 @@ public static class AuthEndpoints
         });
 
         // POST em vez de DELETE porque a confirmação vai no corpo da requisição.
-        account.MapPost("/delete", async (DeleteAccountInput input, ClaimsPrincipal principal, AppDbContext db, IPasswordHasher<User> hasher) =>
+        accountLimited.MapPost("/delete", async (DeleteAccountInput input, ClaimsPrincipal principal, AppDbContext db, IPasswordHasher<User> hasher) =>
         {
             if (await db.Users.FindAsync(principal.UserId()) is not { } user) return Results.Unauthorized();
             var confirmed = user.PasswordHash is not null

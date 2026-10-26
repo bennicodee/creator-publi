@@ -6,3 +6,6 @@ dist
 bin
 obj
 *.user
+
+# segredos de produção (ficam só no servidor)
+.env.production

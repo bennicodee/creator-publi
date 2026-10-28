@@ -60,16 +60,19 @@ export function Account() {
 function PersonalData() {
   const { user, setUser } = useAuth()
   const [name, setName] = useState(user!.name)
+  const [nickname, setNickname] = useState(user!.nickname ?? '')
   const [email, setEmail] = useState(user!.email)
   const { busy, msg, run } = useSubmit()
-  const changed = name.trim() !== user!.name || email.trim().toLowerCase() !== user!.email
+  const changed =
+    name.trim() !== user!.name || nickname.trim() !== (user!.nickname ?? '') || email.trim().toLowerCase() !== user!.email
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
     run(async () => {
-      const updated = await api.updateAccount(name, email)
+      const updated = await api.updateAccount(name, nickname, email)
       setUser(updated)
       setName(updated.name)
+      setNickname(updated.nickname)
       setEmail(updated.email)
       return 'Dados atualizados.'
     })
@@ -80,6 +83,15 @@ function PersonalData() {
       <form className="account-form" onSubmit={submit}>
         <Field label="Nome">
           <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required maxLength={120} />
+        </Field>
+        <Field label="Como podemos te chamar?">
+          <input
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            autoComplete="nickname"
+            maxLength={40}
+            placeholder={name.trim().split(/\s+/)[0] || 'Seu apelido'}
+          />
         </Field>
         <Field label="E-mail">
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />

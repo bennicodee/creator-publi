@@ -10,7 +10,7 @@ interface Session {
 
 interface Auth {
   user: User | null
-  signUp: (name: string, email: string, password: string) => Promise<void>
+  signUp: (name: string, nickname: string, email: string, password: string) => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
   signInWithGoogle: (credential: string) => Promise<void>
   /** Define a senha nova com o token do e-mail de "esqueci minha senha" e já entra. */
@@ -21,6 +21,9 @@ interface Auth {
 }
 
 const KEY = 'creatorpubli:session'
+
+/** Como chamar a pessoa no app: o apelido ou, sem ele, o primeiro nome. */
+export const displayName = (user: User) => user.nickname?.trim() || user.name.trim().split(/\s+/)[0]
 
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
 
@@ -68,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     return {
       user: session?.user ?? null,
-      signUp: async (name, email, password) => start(await api.register(name, email, password)),
+      signUp: async (name, nickname, email, password) => start(await api.register(name, nickname, email, password)),
       signIn: async (email, password) => start(await api.login(email, password)),
       signInWithGoogle: async (credential) => start(await api.google(credential)),
       resetPassword: async (token, newPassword) => start(await api.resetPassword(token, newPassword)),

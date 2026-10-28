@@ -4,6 +4,8 @@ public class User
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = "";
+    // Como a pessoa quer ser chamada no app; vazio = usa o primeiro nome.
+    public string Nickname { get; set; } = "";
     // Sempre em minúsculas; único.
     public string Email { get; set; } = "";
     // Hash PBKDF2 (ASP.NET Identity); nulo em contas só com Google.
@@ -18,10 +20,11 @@ public class User
     public List<Subscription> Subscriptions { get; set; } = [];
     public List<Campaign> Campaigns { get; set; } = [];
 
-    public static User Create(string name, string email) => new()
+    public static User Create(string name, string email, string nickname = "") => new()
     {
         Id = Guid.CreateVersion7(),
         Name = name,
+        Nickname = nickname,
         Email = email,
         CreatedAt = DateTimeOffset.UtcNow,
         Profile = new Profile { Name = name, ContactEmail = email },

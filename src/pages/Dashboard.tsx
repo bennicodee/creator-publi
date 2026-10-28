@@ -1,18 +1,15 @@
 import { useMemo } from 'react'
 import { useStore } from '../store'
+import { displayName, useAuth } from '../auth'
 import { STATUSES } from '../types'
 import { addDays, brl, fmtDate, fmtMonth, monthKey, todayISO } from '../lib/format'
 import { buildEvents, buildReminders, summarize } from '../lib/schedule'
 import { EventList } from '../components/EventList'
 import { Card, Empty, Icon, Kpi, PageHead, SeverityDot } from '../components/ui'
 
-const greeting = () => {
-  const h = new Date().getHours()
-  return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'
-}
-
 export function Dashboard() {
   const { campaigns, settings } = useStore()
+  const { user } = useAuth()
   const today = todayISO()
   const month = monthKey(today)
 
@@ -32,7 +29,7 @@ export function Dashboard() {
   return (
     <>
       <PageHead
-        title={`${greeting()}! 👋`}
+        title={`Oii, ${displayName(user!)}!`}
         subtitle={`${fmtMonth(month)} · ${campaigns.length} campanhas no painel`}
         actions={
           <a className="btn primary" href="#/campanhas/nova">

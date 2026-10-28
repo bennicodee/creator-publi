@@ -165,6 +165,7 @@ export function Login() {
   const { signIn, signUp } = useAuth()
   const [mode, setMode] = useState<'entrar' | 'criar' | 'esqueci'>('entrar')
   const [name, setName] = useState('')
+  const [nickname, setNickname] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPw, setConfirmPw] = useState('')
@@ -187,7 +188,7 @@ export function Login() {
     }
     setBusy(true)
     try {
-      await (creating ? signUp(name, email, password) : signIn(email, password))
+      await (creating ? signUp(name, nickname, email, password) : signIn(email, password))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Algo deu errado. Tente de novo.')
     } finally {
@@ -230,6 +231,18 @@ export function Login() {
             <label className="field">
               Nome
               <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required />
+            </label>
+          )}
+          {creating && (
+            <label className="field">
+              Como podemos te chamar?
+              <input
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                autoComplete="nickname"
+                maxLength={40}
+                placeholder={name.trim() ? `Ex.: ${name.trim().split(/\s+/)[0]}` : 'Seu apelido'}
+              />
             </label>
           )}
           <label className="field">

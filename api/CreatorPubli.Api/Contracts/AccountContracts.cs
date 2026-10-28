@@ -5,20 +5,20 @@ namespace CreatorPubli.Api.Contracts;
 
 // ---------- auth ----------
 
-public record RegisterInput([Required, MaxLength(120)] string Name, [Required(ErrorMessage = "Informe o e-mail."), EmailAddress(ErrorMessage = "Digite um e-mail válido."), MaxLength(254)] string Email, [Required, MinLength(6, ErrorMessage = "A senha precisa ter pelo menos 6 caracteres."), MaxLength(128)] string Password);
+public record RegisterInput([Required, MaxLength(120)] string Name, [Required(ErrorMessage = "Informe o e-mail."), EmailAddress(ErrorMessage = "Digite um e-mail válido."), MaxLength(254)] string Email, [Required, MinLength(6, ErrorMessage = "A senha precisa ter pelo menos 6 caracteres."), MaxLength(128)] string Password, [MaxLength(40, ErrorMessage = "O apelido pode ter até 40 caracteres.")] string? Nickname = null);
 
 public record LoginInput([Required] string Email, [Required] string Password);
 
 // ID token (credential) devolvido pelo botão do Google Identity Services.
 public record GoogleLoginInput([Required] string Credential);
 
-public record UserDto(Guid Id, string Name, string Email, string Provider, string? Picture, bool HasPassword, bool GoogleLinked);
+public record UserDto(Guid Id, string Name, string Nickname, string Email, string Provider, string? Picture, bool HasPassword, bool GoogleLinked);
 
 public record AuthResponse(string Token, DateTimeOffset ExpiresAt, UserDto User);
 
 // ---------- minha conta ----------
 
-public record AccountInput([Required(ErrorMessage = "Informe o nome."), MaxLength(120)] string Name, [Required(ErrorMessage = "Informe o e-mail."), EmailAddress(ErrorMessage = "Digite um e-mail válido."), MaxLength(254)] string Email);
+public record AccountInput([Required(ErrorMessage = "Informe o nome."), MaxLength(120)] string Name, [Required(ErrorMessage = "Informe o e-mail."), EmailAddress(ErrorMessage = "Digite um e-mail válido."), MaxLength(254)] string Email, [MaxLength(40, ErrorMessage = "O apelido pode ter até 40 caracteres.")] string? Nickname = null);
 
 // CurrentPassword é obrigatória quando a conta já tem senha; contas só com Google podem criar uma.
 public record ChangePasswordInput(string? CurrentPassword, [Required, MinLength(6, ErrorMessage = "A nova senha precisa ter pelo menos 6 caracteres."), MaxLength(128)] string NewPassword);
@@ -76,7 +76,7 @@ public record PlanDto(bool Active, DateOnly? Since, decimal MonthlyPrice, string
 public static class AccountMapping
 {
     public static UserDto ToDto(this User u) =>
-        new(u.Id, u.Name, u.Email, u.PasswordHash is null ? "google" : "senha", u.PictureUrl, u.PasswordHash is not null, u.GoogleSubject is not null);
+        new(u.Id, u.Name, u.Nickname, u.Email, u.PasswordHash is null ? "google" : "senha", u.PictureUrl, u.PasswordHash is not null, u.GoogleSubject is not null);
 
     public static ProfileDto ToDto(this Profile p) => new(
         p.Name, p.Bio, p.Niche, p.City, p.ContactEmail, p.ContactPhone, p.PhotoUrl, p.PublicSlug,

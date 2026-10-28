@@ -27,7 +27,7 @@ public static class AuthEndpoints
             if (await db.Users.AnyAsync(u => u.Email == email))
                 return Results.Problem("Já existe uma conta com esse e-mail.", statusCode: StatusCodes.Status409Conflict);
 
-            var user = User.Create(input.Name.Trim(), email);
+            var user = User.Create(input.Name.Trim(), email, input.Nickname?.Trim() ?? "");
             user.PasswordHash = hasher.HashPassword(user, input.Password);
             db.Users.Add(user);
             await db.SaveChangesAsync();
@@ -150,6 +150,7 @@ public static class AuthEndpoints
             if (email != user.Email && await db.Users.AnyAsync(u => u.Email == email))
                 return Results.Problem("Já existe uma conta com esse e-mail.", statusCode: StatusCodes.Status409Conflict);
             user.Name = input.Name.Trim();
+            user.Nickname = input.Nickname?.Trim() ?? "";
             user.Email = email;
             await db.SaveChangesAsync();
             return Results.Ok(user.ToDto());

@@ -6,6 +6,8 @@ const BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5080').replace(/
 export interface User {
   id: string
   name: string
+  /** Como a pessoa quer ser chamada; vazio = primeiro nome (ver displayName em auth.tsx). */
+  nickname: string
   email: string
   provider: 'senha' | 'google'
   picture: string | null
@@ -140,15 +142,15 @@ export interface PublicKit {
 // ---------- endpoints ----------
 
 export const api = {
-  register: (name: string, email: string, password: string) =>
-    request<AuthResponse>('POST', '/api/auth/register', { name, email, password }),
+  register: (name: string, nickname: string, email: string, password: string) =>
+    request<AuthResponse>('POST', '/api/auth/register', { name, nickname, email, password }),
   login: (email: string, password: string) => request<AuthResponse>('POST', '/api/auth/login', { email, password }),
   google: (credential: string) => request<AuthResponse>('POST', '/api/auth/google', { credential }),
   me: () => request<User>('GET', '/api/auth/me'),
   forgotPassword: (email: string) => request<void>('POST', '/api/auth/forgot-password', { email }),
   resetPassword: (token: string, newPassword: string) =>
     request<AuthResponse>('POST', '/api/auth/reset-password', { token, newPassword }),
-  updateAccount: (name: string, email: string) => request<User>('PUT', '/api/account', { name, email }),
+  updateAccount: (name: string, nickname: string, email: string) => request<User>('PUT', '/api/account', { name, nickname, email }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<User>('PUT', '/api/account/password', { currentPassword, newPassword }),
   deleteAccount: (confirmation: { password?: string; email?: string }) => request<void>('POST', '/api/account/delete', confirmation),

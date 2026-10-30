@@ -170,9 +170,11 @@ export interface Plan {
   paymentsEnabled: boolean
   /** Página do Mercado Pago para concluir um pagamento pendente. */
   checkoutUrl: string
+  /** false enquanto o Mercado Pago está em modo teste: o botão de assinar mostra "em breve". */
+  subscriptionsOpen: boolean
 }
 
-export const noPlan: Plan = { active: false, since: '', status: 'none', paymentsEnabled: false, checkoutUrl: '' }
+export const noPlan: Plan = { active: false, since: '', status: 'none', paymentsEnabled: false, checkoutUrl: '', subscriptionsOpen: true }
 
 export interface ReminderSettings {
   email: string

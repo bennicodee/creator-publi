@@ -95,6 +95,7 @@ Padrões usados no frontend:
 | Tecnologia | Para quê |
 |---|---|
 | **Git + GitHub** | Versionamento, branches por funcionalidade (`feat/...`) e merge na `main` |
+| **GitHub Actions** | CI a cada push: build do frontend e testes da API (`.github/workflows/ci.yml`) |
 | **Docker + Docker Compose** | API e banco em containers, iguais no desenvolvimento e na produção |
 | **Dockerfile multi-stage** | Compila com o SDK e roda só com o runtime, com usuário sem privilégios |
 | **VPS Linux (Ubuntu 22.04)** | Servidor de produção |

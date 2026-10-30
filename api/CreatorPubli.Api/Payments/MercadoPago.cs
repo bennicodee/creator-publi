@@ -18,6 +18,10 @@ public class MercadoPagoOptions
     public string BackUrl { get; set; } = "";
 
     public bool Enabled => AccessToken.Length > 0;
+
+    // Credenciais de teste na produção: só o comprador de teste consegue pagar, então novas assinaturas
+    // ficam fechadas ("em breve") até configurar as credenciais reais sem TestPayerEmail.
+    public bool TestMode => Enabled && TestPayerEmail.Length > 0;
 }
 
 // Assinatura ("preapproval") como o Mercado Pago devolve: status pending, authorized, paused ou cancelled.

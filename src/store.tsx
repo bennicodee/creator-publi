@@ -184,7 +184,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
       },
       cancelPlan: () => {
-        setState((s) => ({ ...s, plan: { ...noPlan, paymentsEnabled: s.plan.paymentsEnabled } }))
+        setState((s) => ({ ...s, plan: { ...noPlan, paymentsEnabled: s.plan.paymentsEnabled, subscriptionsOpen: s.plan.subscriptionsOpen } }))
         api.cancelPlan().then((plan) => setState((s) => ({ ...s, plan }))).catch(fail)
       },
       loadDemo: async () => {

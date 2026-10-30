@@ -45,6 +45,7 @@ public class SocialAccount
 public class ReminderSettings
 {
     public Guid UserId { get; set; }
+    // Vazio = resumo diário por e-mail desligado. O resumo vai sempre para o e-mail (confirmado) da conta.
     public string Email { get; set; } = "";
     public string Whatsapp { get; set; } = "";
     public bool WhatsappEnabled { get; set; }
@@ -55,4 +56,6 @@ public class ReminderSettings
     // Quantos dias antes do prazo começar a avisar.
     public int DaysBefore { get; set; } = 2;
     public TimeOnly DigestTime { get; set; } = new(8, 0);
+    // Último dia (Brasília) em que o resumo foi processado: no máximo um por dia.
+    public DateOnly? LastDigestOn { get; set; }
 }

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useStore } from '../store'
+import { useAuth } from '../auth'
 import { ReminderSettings } from '../types'
 import { fmtDate, todayISO } from '../lib/format'
 import { Severity, buildReminders, digestText } from '../lib/schedule'
@@ -22,6 +23,7 @@ const TOGGLES: { key: keyof ReminderSettings; label: string; example: string }[]
 
 export function Reminders() {
   const { campaigns, settings, updateSettings } = useStore()
+  const { user } = useAuth()
   const today = todayISO()
   const reminders = useMemo(() => buildReminders(campaigns, today, settings), [campaigns, today, settings])
   const urgent = reminders.filter((r) => r.severity !== 'proximo')
@@ -61,14 +63,23 @@ export function Reminders() {
         <div className="stack">
           <Card title="Como avisar">
             <div className="form-grid">
-              <label className="field wide">
-                <span>E-mail para o resumo diário</span>
+              {/* settings.email preenchido = resumo ligado; o envio vai sempre para o e-mail confirmado da conta. */}
+              <label className="switch wide">
                 <input
-                  type="email"
-                  placeholder="voce@email.com"
-                  value={settings.email}
-                  onChange={(e) => updateSettings({ email: e.target.value })}
+                  type="checkbox"
+                  checked={settings.email !== ''}
+                  onChange={(e) => updateSettings({ email: e.target.checked ? user!.email : '' })}
                 />
+                <span className="switch-track" />
+                <span>
+                  <strong>Resumo diário por e-mail</strong>
+                  <span className="muted small block">
+                    {user!.emailVerified
+                      ? `Enviado para ${user!.email}, só nos dias com algo pendente.`
+                      : `Confirme o e-mail ${user!.email} (link no aviso do topo) para começar a receber.`}{' '}
+                    Para trocar o endereço, vá em <a href="#/conta" className="link">Minha conta</a>.
+                  </span>
+                </span>
               </label>
               <label className="field">
                 <span>Horário do resumo</span>
@@ -94,7 +105,7 @@ export function Reminders() {
               </span>
             }
           >
-            <Premium feature="Lembretes por WhatsApp" description="Receba o resumo do dia e os alertas de cobrança direto no seu WhatsApp.">
+            <Premium feature="Lembretes por WhatsApp" description="Monte o resumo do dia e os alertas de cobrança prontos para enviar no seu WhatsApp.">
               <div className="form-grid">
                 <label className="field wide">
                   <span>Seu número</span>
@@ -105,15 +116,15 @@ export function Reminders() {
                   />
                 </label>
                 <label className="switch wide">
-                  <input
-                    type="checkbox"
-                    checked={settings.whatsappEnabled}
-                    onChange={(e) => updateSettings({ whatsappEnabled: e.target.checked })}
-                  />
+                  <input type="checkbox" checked={false} disabled />
                   <span className="switch-track" />
                   <span>
-                    <strong>Resumo diário às {settings.digestTime}</strong>
-                    <span className="muted small block">Mesmos alertas do e-mail, no formato de mensagem.</span>
+                    <strong>
+                      Envio automático às {settings.digestTime} <span className="soon-badge">em breve</span>
+                    </strong>
+                    <span className="muted small block">
+                      Por enquanto, use o botão abaixo: ele abre o WhatsApp com o resumo pronto para enviar.
+                    </span>
                   </span>
                 </label>
               </div>
@@ -153,7 +164,7 @@ export function Reminders() {
           <Card title="Prévia do e-mail de hoje">
             <div className="email-preview">
               <div className="email-meta small muted">
-                Para: {settings.email || 'seu e-mail'} · {settings.digestTime}
+                {settings.email ? `Para: ${user!.email} · ${settings.digestTime}` : 'Resumo por e-mail desligado'}
               </div>
               <strong>
                 {urgent.length > 0 ? `⚠ ${urgent.length} coisa(s) pra hoje no CreatorPubli` : 'Seu dia no CreatorPubli'}

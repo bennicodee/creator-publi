@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useRoute } from './router'
 import { StoreProvider, useStore } from './store'
 import { useAuth, type User } from './auth'
@@ -20,6 +20,9 @@ import { Invoices } from './pages/Invoices'
 import { Login } from './pages/Login'
 import { ResetPassword } from './pages/ResetPassword'
 import { Account } from './pages/Account'
+import { ConfirmEmail } from './pages/ConfirmEmail'
+import { Privacy, Terms } from './pages/Legal'
+import { api } from './lib/api'
 
 const NAV: { to: string; label: string; icon: IconName; premium?: boolean }[] = [
   { to: '/', label: 'Início', icon: 'home' },
@@ -67,6 +70,10 @@ export default function App() {
   if (kit) return <MediaKitPublic slug={decodeURIComponent(kit[1])} />
   const reset = path.match(/^\/redefinir-senha\/([^/]+)$/)
   if (reset) return <ResetPassword token={reset[1]} />
+  const confirm = path.match(/^\/confirmar-email\/([^/]+)$/)
+  if (confirm) return <ConfirmEmail token={confirm[1]} />
+  if (path === '/termos') return <Terms />
+  if (path === '/privacidade') return <Privacy />
   if (!user) return <Login />
 
   // key: trocar de conta descarta os dados da conta anterior.
@@ -74,6 +81,29 @@ export default function App() {
     <StoreProvider key={user.id}>
       <Shell path={path} user={user} />
     </StoreProvider>
+  )
+}
+
+/** Até confirmar o e-mail, a pessoa não recebe o resumo diário; o aviso permite pedir o link de novo. */
+function VerifyBanner({ email }: { email: string }) {
+  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const resend = () => {
+    setState('sending')
+    api.resendVerification().then(() => setState('sent'), () => setState('error'))
+  }
+  return (
+    <div className="verify-banner" role="status">
+      <span>
+        Confirme seu e-mail: enviamos um link para <strong>{email}</strong>. Sem isso, o resumo diário de prazos não é enviado.
+      </span>
+      {state === 'sent' ? (
+        <span>Link enviado! Olhe também o spam.</span>
+      ) : (
+        <button type="button" className="link-btn" onClick={resend} disabled={state === 'sending'}>
+          {state === 'sending' ? 'Enviando…' : state === 'error' ? 'Não deu certo, tentar de novo' : 'Reenviar link'}
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -133,6 +163,7 @@ function Shell({ path, user }: { path: string; user: User }) {
         </div>
       </aside>
       <main className="content">
+        {user.emailVerified === false && <VerifyBanner email={user.email} />}
         {error && status !== 'error' && (
           <div className="api-error" role="alert">
             <span>{error}</span>

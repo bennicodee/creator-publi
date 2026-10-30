@@ -293,6 +293,11 @@ export function Login() {
           </button>
         </form>
 
+        <p className="muted center auth-legal">
+          Ao continuar, você concorda com os <a href="#/termos">Termos de Uso</a> e a{' '}
+          <a href="#/privacidade">Política de Privacidade</a>.
+        </p>
+
         <p className="muted small center auth-switch">
           {creating ? 'Já tem conta? ' : 'Ainda não tem conta? '}
           <button type="button" className="link-btn" onClick={() => switchMode(creating ? 'entrar' : 'criar')}>

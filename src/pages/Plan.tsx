@@ -15,10 +15,10 @@ const FREE = [
 ]
 
 const PREMIUM: { title: string; description: string; to: string; icon: IconName }[] = [
-  { title: 'Lembretes por WhatsApp', description: 'Resumo do dia e cobrança direto no WhatsApp', to: '/lembretes', icon: 'whatsapp' },
-  { title: 'Instagram e TikTok', description: 'Confirma a postagem pelo link e organiza as métricas', to: '/metricas', icon: 'chart' },
+  { title: 'Resumo no WhatsApp', description: 'Resumo do dia pronto para enviar no WhatsApp (envio automático em breve)', to: '/lembretes', icon: 'whatsapp' },
+  { title: 'Métricas dos posts', description: 'Confirma a postagem pelo link e organiza views e engajamento de cada publi', to: '/metricas', icon: 'chart' },
   { title: 'Mídia kit', description: 'Página com seus números, preços e cases', to: '/midia-kit', icon: 'kit' },
-  { title: 'Assistente de briefing', description: 'Lê o briefing e monta checklist e roteiro', to: '/campanhas', icon: 'sparkle' },
+  { title: 'Assistente de briefing', description: 'Lê o briefing e monta checklist e roteiro (no fim de cada campanha)', to: '/campanhas/nova', icon: 'sparkle' },
   { title: 'Notas fiscais', description: 'NF pré-preenchida a partir da campanha paga', to: '/notas', icon: 'invoice' },
 ]
 

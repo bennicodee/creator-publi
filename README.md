@@ -70,6 +70,8 @@ Padrões usados no frontend:
 | **Rate Limiter do ASP.NET Core** | Limite de 10 tentativas/minuto por IP em login, cadastro, troca de senha etc. |
 | **Forwarded Headers** | Enxergar o IP real do usuário atrás do nginx |
 | **MailKit** | Envio de e-mails por SMTP, em segundo plano (`BackgroundService` + `Channel`) |
+| **`BackgroundService` + `PeriodicTimer`** | Resumo diário de prazos por e-mail, no horário que cada pessoa escolhe (fuso de Brasília) |
+| **xUnit** | Testes automáticos (`api/CreatorPubli.Api.Tests`): regras dos lembretes, link de confirmação de e-mail e assinatura do webhook |
 | **HttpClient tipado** | Integração com a API do Mercado Pago |
 | **OpenAPI + Scalar** | Documentação interativa da API em desenvolvimento (`/scalar`) |
 | **User Secrets** | Chaves de desenvolvimento fora do código e do Git |
@@ -109,6 +111,10 @@ Padrões usados no frontend:
 - HTTPS em tudo (Cloudflare no site, Let's Encrypt na API).
 - Senhas com hash PBKDF2; tokens de redefinição de senha guardados só como hash SHA-256, de uso único e com validade de 1 hora.
 - "Esqueci minha senha" responde igual exista ou não a conta (não revela quais e-mails estão cadastrados).
+- Confirmação de e-mail por link assinado (HMAC, validade de 48 h); o resumo diário só vai para e-mails confirmados.
+- Versão de sessão no token: trocar a senha ou "sair de todos os aparelhos" derruba as outras sessões na hora.
+- Login com Google numa conta nunca confirmada descarta a senha antiga (impede que alguém crie a conta com o e-mail de outra pessoa e continue com acesso).
+- Backup testado com restauração completa em um banco temporário.
 - Rate limiting nas rotas de autenticação.
 - CORS liberando só os domínios do app.
 - Webhooks do Mercado Pago validados por HMAC antes de qualquer ação, e o estado é sempre reconsultado no Mercado Pago.
@@ -119,7 +125,8 @@ Padrões usados no frontend:
 
 ## Funcionalidades
 
-- Cadastro e login com e-mail/senha ou Google; "esqueci minha senha" por e-mail; tela **Minha conta** (editar dados, trocar senha, excluir conta).
+- Cadastro e login com e-mail/senha ou Google, com apelido e confirmação de e-mail; "esqueci minha senha" por e-mail; tela **Minha conta** (editar dados, trocar senha, sair de todos os aparelhos, excluir conta).
+- Resumo diário dos prazos por e-mail; Termos de Uso e Política de Privacidade (LGPD).
 - Campanhas com kanban de status (proposta → negociando → fechada → produção → aprovação → postada → paga).
 - Entregáveis (reels, stories, TikTok...) com prazos de roteiro, aprovação e postagem; calendário.
 - Financeiro: valores fechados, recebidos e atrasados, com mensagem de cobrança pronta.
@@ -157,6 +164,9 @@ cd api && docker compose up -d
 
 # API em http://localhost:5080 (aplica as migrations sozinha; docs em /scalar)
 dotnet run --project CreatorPubli.Api
+
+# testes automáticos da API
+dotnet test CreatorPubli.Api.Tests
 
 # frontend em http://localhost:5173 (em outro terminal, na raiz)
 npm install

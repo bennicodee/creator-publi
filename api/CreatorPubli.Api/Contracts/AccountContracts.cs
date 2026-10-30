@@ -12,7 +12,10 @@ public record LoginInput([Required] string Email, [Required] string Password);
 // ID token (credential) devolvido pelo botão do Google Identity Services.
 public record GoogleLoginInput([Required] string Credential);
 
-public record UserDto(Guid Id, string Name, string Nickname, string Email, string Provider, string? Picture, bool HasPassword, bool GoogleLinked);
+public record UserDto(Guid Id, string Name, string Nickname, string Email, bool EmailVerified, string Provider, string? Picture, bool HasPassword, bool GoogleLinked);
+
+// Token do link do e-mail de confirmação.
+public record VerifyEmailInput([Required] string Token);
 
 public record AuthResponse(string Token, DateTimeOffset ExpiresAt, UserDto User);
 
@@ -76,7 +79,7 @@ public record PlanDto(bool Active, DateOnly? Since, decimal MonthlyPrice, string
 public static class AccountMapping
 {
     public static UserDto ToDto(this User u) =>
-        new(u.Id, u.Name, u.Nickname, u.Email, u.PasswordHash is null ? "google" : "senha", u.PictureUrl, u.PasswordHash is not null, u.GoogleSubject is not null);
+        new(u.Id, u.Name, u.Nickname, u.Email, u.EmailVerifiedAt is not null, u.PasswordHash is null ? "google" : "senha", u.PictureUrl, u.PasswordHash is not null, u.GoogleSubject is not null);
 
     public static ProfileDto ToDto(this Profile p) => new(
         p.Name, p.Bio, p.Niche, p.City, p.ContactEmail, p.ContactPhone, p.PhotoUrl, p.PublicSlug,

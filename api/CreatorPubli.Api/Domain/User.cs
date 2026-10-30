@@ -13,7 +13,14 @@ public class User
     // Claim "sub" do Google; único quando presente.
     public string? GoogleSubject { get; set; }
     public string? PictureUrl { get; set; }
+    // Preenchido quando a pessoa abre o link do e-mail de confirmação (ou entra com o Google).
+    public DateTimeOffset? EmailVerifiedAt { get; set; }
+    // Vai no token de login; aumentar derruba todas as sessões abertas (troca de senha, "sair de todos").
+    public int SessionVersion { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
+
+    // Como chamar a pessoa nos e-mails: o apelido ou, sem ele, o primeiro nome.
+    public string CallName => Nickname.Length > 0 ? Nickname : Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
 
     public Profile Profile { get; set; } = null!;
     public ReminderSettings Settings { get; set; } = null!;

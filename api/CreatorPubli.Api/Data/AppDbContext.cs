@@ -35,6 +35,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(u => u.GoogleSubject).IsUnique();
             e.Property(u => u.Name).HasMaxLength(120);
             e.Property(u => u.Nickname).HasMaxLength(40);
+            e.Ignore(u => u.CallName);
             e.Property(u => u.Email).HasMaxLength(254);
             e.HasOne(u => u.Profile).WithOne().HasForeignKey<Profile>(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(u => u.Settings).WithOne().HasForeignKey<ReminderSettings>(s => s.UserId).OnDelete(DeleteBehavior.Cascade);

@@ -21,7 +21,8 @@ public static class AuthEndpoints
         // Rotas que recebem senha ou token: limite de tentativas por IP (política "auth" no Program.cs).
         var limited = g.MapGroup("").RequireRateLimiting("auth");
 
-        limited.MapPost("/register", async (RegisterInput input, AppDbContext db, IPasswordHasher<User> hasher, TokenService tokens) =>
+        limited.MapPost("/register", async (RegisterInput input, AppDbContext db, IPasswordHasher<User> hasher, TokenService tokens,
+            EmailQueue emails, EmailVerificationTokens verification, FrontendOptions frontend) =>
         {
             var email = NormalizeEmail(input.Email);
             if (await db.Users.AnyAsync(u => u.Email == email))
@@ -31,6 +32,7 @@ public static class AuthEndpoints
             user.PasswordHash = hasher.HashPassword(user, input.Password);
             db.Users.Add(user);
             await db.SaveChangesAsync();
+            SendVerification(user, emails, verification, frontend);
             return Results.Ok(tokens.Issue(user));
         });
 
@@ -86,6 +88,18 @@ public static class AuthEndpoints
                 user = User.Create(payload.Name ?? email, email);
                 db.Users.Add(user);
             }
+            if (user.Email == email && user.EmailVerifiedAt is null)
+            {
+                // Conta criada com esse e-mail sem nunca confirmar: pode ter sido criada por outra pessoa.
+                // O Google prova que o e-mail é de quem está entrando agora, então a senha não confirmada
+                // é descartada e as sessões abertas caem (a dona pode criar uma senha em Minha conta).
+                if (user.PasswordHash is not null)
+                {
+                    user.PasswordHash = null;
+                    user.SessionVersion++;
+                }
+                user.EmailVerifiedAt = DateTimeOffset.UtcNow;
+            }
             // Conta com senha e mesmo e-mail (verificado pelo Google) passa a aceitar os dois logins.
             user.GoogleSubject = payload.Subject;
             user.PictureUrl = payload.Picture ?? user.PictureUrl;
@@ -131,9 +145,26 @@ public static class AuthEndpoints
                     statusCode: StatusCodes.Status400BadRequest);
 
             user.PasswordHash = hasher.HashPassword(user, input.NewPassword);
+            // Quem abriu o link do e-mail provou que o e-mail é seu; as outras sessões caem.
+            user.EmailVerifiedAt ??= DateTimeOffset.UtcNow;
+            user.SessionVersion++;
             reset.UsedAt = DateTimeOffset.UtcNow;
             await db.SaveChangesAsync();
             return Results.Ok(tokens.Issue(user));
+        });
+
+        // Link do e-mail de confirmação. Não exige login: o link pode ser aberto em outro aparelho.
+        limited.MapPost("/verify-email", async (VerifyEmailInput input, AppDbContext db, EmailVerificationTokens verification) =>
+        {
+            // Link de um e-mail que a conta não usa mais (trocado em Minha conta) também é inválido.
+            if (verification.Read(input.Token, DateTimeOffset.UtcNow) is not { } link ||
+                await db.Users.FindAsync(link.UserId) is not { } user || user.Email != link.Email)
+                return Results.Problem("Esse link de confirmação é inválido ou expirou. Peça um novo no aviso do app.",
+                    statusCode: StatusCodes.Status400BadRequest);
+
+            user.EmailVerifiedAt ??= DateTimeOffset.UtcNow;
+            await db.SaveChangesAsync();
+            return Results.Ok(user.ToDto());
         });
 
         g.MapGet("/me", async (ClaimsPrincipal principal, AppDbContext db) =>
@@ -143,28 +174,53 @@ public static class AuthEndpoints
         var account = app.MapGroup("/api/account").WithTags("Minha conta").RequireAuthorization();
         var accountLimited = account.MapGroup("").RequireRateLimiting("auth");
 
-        account.MapPut("/", async (AccountInput input, ClaimsPrincipal principal, AppDbContext db) =>
+        account.MapPut("/", async (AccountInput input, ClaimsPrincipal principal, AppDbContext db,
+            EmailQueue emails, EmailVerificationTokens verification, FrontendOptions frontend) =>
         {
             if (await db.Users.FindAsync(principal.UserId()) is not { } user) return Results.Unauthorized();
             var email = NormalizeEmail(input.Email);
-            if (email != user.Email && await db.Users.AnyAsync(u => u.Email == email))
+            var emailChanged = email != user.Email;
+            if (emailChanged && await db.Users.AnyAsync(u => u.Email == email))
                 return Results.Problem("Já existe uma conta com esse e-mail.", statusCode: StatusCodes.Status409Conflict);
             user.Name = input.Name.Trim();
             user.Nickname = input.Nickname?.Trim() ?? "";
             user.Email = email;
+            // E-mail novo precisa ser confirmado de novo antes de receber os resumos.
+            if (emailChanged) user.EmailVerifiedAt = null;
             await db.SaveChangesAsync();
+            if (emailChanged) SendVerification(user, emails, verification, frontend);
             return Results.Ok(user.ToDto());
         });
 
-        accountLimited.MapPut("/password", async (ChangePasswordInput input, ClaimsPrincipal principal, AppDbContext db, IPasswordHasher<User> hasher) =>
+        accountLimited.MapPost("/verify-email/resend", async (ClaimsPrincipal principal, AppDbContext db,
+            EmailQueue emails, EmailVerificationTokens verification, FrontendOptions frontend) =>
+        {
+            if (await db.Users.FindAsync(principal.UserId()) is not { } user) return Results.Unauthorized();
+            if (user.EmailVerifiedAt is null) SendVerification(user, emails, verification, frontend);
+            return Results.NoContent();
+        });
+
+        // Troca a senha e encerra as sessões nos outros aparelhos; devolve a sessão nova deste aparelho.
+        accountLimited.MapPut("/password", async (ChangePasswordInput input, ClaimsPrincipal principal, AppDbContext db,
+            IPasswordHasher<User> hasher, TokenService tokens) =>
         {
             if (await db.Users.FindAsync(principal.UserId()) is not { } user) return Results.Unauthorized();
             if (user.PasswordHash is not null &&
                 hasher.VerifyHashedPassword(user, user.PasswordHash, input.CurrentPassword ?? "") == PasswordVerificationResult.Failed)
                 return Results.Problem("A senha atual está incorreta.", statusCode: StatusCodes.Status400BadRequest);
             user.PasswordHash = hasher.HashPassword(user, input.NewPassword);
+            user.SessionVersion++;
             await db.SaveChangesAsync();
-            return Results.Ok(user.ToDto());
+            return Results.Ok(tokens.Issue(user));
+        });
+
+        // "Sair de todos os aparelhos": derruba todas as sessões e devolve uma nova só para este.
+        account.MapPost("/sessions/revoke", async (ClaimsPrincipal principal, AppDbContext db, TokenService tokens) =>
+        {
+            if (await db.Users.FindAsync(principal.UserId()) is not { } user) return Results.Unauthorized();
+            user.SessionVersion++;
+            await db.SaveChangesAsync();
+            return Results.Ok(tokens.Issue(user));
         });
 
         // POST em vez de DELETE porque a confirmação vai no corpo da requisição.
@@ -187,6 +243,12 @@ public static class AuthEndpoints
     const int ResetLinkMinutes = 60;
 
     static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
+
+    static void SendVerification(User user, EmailQueue emails, EmailVerificationTokens verification, FrontendOptions frontend)
+    {
+        var link = $"{frontend.BaseUrl.TrimEnd('/')}/#/confirmar-email/{verification.Create(user, DateTimeOffset.UtcNow)}";
+        emails.Enqueue(VerifyEmailEmail.Build(user.Email, user.CallName, link, EmailVerificationTokens.ValidHours));
+    }
 
     static string HashToken(string token) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 }

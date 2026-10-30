@@ -419,6 +419,10 @@ namespace CreatorPubli.Api.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("email");
 
+                    b.Property<DateOnly?>("LastDigestOn")
+                        .HasColumnType("date")
+                        .HasColumnName("last_digest_on");
+
                     b.Property<bool>("NotifyApproval")
                         .HasColumnType("boolean")
                         .HasColumnName("notify_approval");
@@ -524,6 +528,10 @@ namespace CreatorPubli.Api.Data.Migrations
                         .HasColumnType("character varying(254)")
                         .HasColumnName("email");
 
+                    b.Property<DateTimeOffset?>("EmailVerifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("email_verified_at");
+
                     b.Property<string>("GoogleSubject")
                         .HasColumnType("text")
                         .HasColumnName("google_subject");
@@ -547,6 +555,10 @@ namespace CreatorPubli.Api.Data.Migrations
                     b.Property<string>("PictureUrl")
                         .HasColumnType("text")
                         .HasColumnName("picture_url");
+
+                    b.Property<int>("SessionVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("session_version");
 
                     b.HasKey("Id")
                         .HasName("pk_users");

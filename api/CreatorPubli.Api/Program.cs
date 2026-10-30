@@ -144,7 +144,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
-app.MapGet("/health", () => Results.Ok(new { status = "ok" })).ExcludeFromDescription();
+// HEAD também: monitores como o UptimeRobot testam primeiro com HEAD.
+app.MapMethods("/health", ["GET", "HEAD"], () => Results.Ok(new { status = "ok" })).ExcludeFromDescription();
 app.MapAuth();
 app.MapCampaigns();
 app.MapAccount();

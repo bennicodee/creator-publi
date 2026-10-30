@@ -74,7 +74,8 @@ public record ReminderSettingsDto(
     TimeOnly DigestTime);
 
 // Status: none, pending (pagamento iniciado), authorized (ativo), paused. CheckoutUrl: retomar pagamento pendente.
-public record PlanDto(bool Active, DateOnly? Since, decimal MonthlyPrice, string Status, bool PaymentsEnabled, string? CheckoutUrl);
+// SubscriptionsOpen: false enquanto o Mercado Pago está em modo teste (botão "em breve").
+public record PlanDto(bool Active, DateOnly? Since, decimal MonthlyPrice, string Status, bool PaymentsEnabled, string? CheckoutUrl, bool SubscriptionsOpen);
 
 public static class AccountMapping
 {

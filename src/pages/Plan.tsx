@@ -150,14 +150,27 @@ export function Plan() {
                 </li>
               ))}
             </ul>
-            <button className="btn primary block" onClick={startSubscription} disabled={subscribing || plan.status === 'pending'}>
-              {subscribing ? 'Abrindo pagamento…' : 'Assinar Plano Creator'}
-            </button>
-            <p className="muted small center">
-              {plan.paymentsEnabled
-                ? 'Pagamento seguro pelo Mercado Pago. Cobrança mensal no cartão; cancele quando quiser.'
-                : 'Versão de demonstração: a assinatura é simulada, sem cobrança.'}
-            </p>
+            {plan.subscriptionsOpen ? (
+              <>
+                <button className="btn primary block" onClick={startSubscription} disabled={subscribing || plan.status === 'pending'}>
+                  {subscribing ? 'Abrindo pagamento…' : 'Assinar Plano Creator'}
+                </button>
+                <p className="muted small center">
+                  {plan.paymentsEnabled
+                    ? 'Pagamento seguro pelo Mercado Pago. Cobrança mensal no cartão; cancele quando quiser.'
+                    : 'Versão de demonstração: a assinatura é simulada, sem cobrança.'}
+                </p>
+              </>
+            ) : (
+              <>
+                <button className="btn primary block" disabled>
+                  Em breve
+                </button>
+                <p className="muted small center">
+                  As assinaturas abrem nos próximos dias. Enquanto isso, aproveite tudo do plano grátis.
+                </p>
+              </>
+            )}
           </Card>
         </div>
       )}

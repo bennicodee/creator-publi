@@ -46,6 +46,8 @@ public static class PlanEndpoints
             var userId = principal.UserId();
             var open = await OpenSubscription(db, userId);
             if (open is { Status: SubscriptionStatus.Authorized }) return Results.Ok(ToDto(open, options));
+            if (options.TestMode)
+                return Results.Problem("O Plano Creator abre para assinaturas em breve.", statusCode: StatusCodes.Status503ServiceUnavailable);
 
             if (!options.Enabled)
             {
@@ -182,6 +184,7 @@ public static class PlanEndpoints
             open?.MonthlyPrice ?? PlanPrice,
             open is null ? "none" : open.Status.ToString().ToLowerInvariant(),
             options.Enabled,
-            open is { Status: SubscriptionStatus.Pending } ? open.CheckoutUrl : null);
+            open is { Status: SubscriptionStatus.Pending } ? open.CheckoutUrl : null,
+            !options.TestMode);
     }
 }

@@ -9,6 +9,8 @@ export interface User {
   /** Como a pessoa quer ser chamada; vazio = primeiro nome (ver displayName em auth.tsx). */
   nickname: string
   email: string
+  /** false até a pessoa abrir o link do e-mail de confirmação (Google já vem confirmado). */
+  emailVerified: boolean
   provider: 'senha' | 'google'
   picture: string | null
   hasPassword: boolean
@@ -150,9 +152,13 @@ export const api = {
   forgotPassword: (email: string) => request<void>('POST', '/api/auth/forgot-password', { email }),
   resetPassword: (token: string, newPassword: string) =>
     request<AuthResponse>('POST', '/api/auth/reset-password', { token, newPassword }),
+  verifyEmail: (token: string) => request<User>('POST', '/api/auth/verify-email', { token }),
+  resendVerification: () => request<void>('POST', '/api/account/verify-email/resend'),
   updateAccount: (name: string, nickname: string, email: string) => request<User>('PUT', '/api/account', { name, nickname, email }),
+  /** Encerra as sessões nos outros aparelhos e devolve a sessão nova deste. */
   changePassword: (currentPassword: string, newPassword: string) =>
-    request<User>('PUT', '/api/account/password', { currentPassword, newPassword }),
+    request<AuthResponse>('PUT', '/api/account/password', { currentPassword, newPassword }),
+  revokeSessions: () => request<AuthResponse>('POST', '/api/account/sessions/revoke'),
   deleteAccount: (confirmation: { password?: string; email?: string }) => request<void>('POST', '/api/account/delete', confirmation),
 
   campaigns: async () => (await request<ApiCampaign[]>('GET', '/api/campaigns')).map(fromCampaign),

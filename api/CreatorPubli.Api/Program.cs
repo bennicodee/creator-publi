@@ -8,6 +8,7 @@ using CreatorPubli.Api.Domain;
 using CreatorPubli.Api.Email;
 using CreatorPubli.Api.Endpoints;
 using CreatorPubli.Api.Payments;
+using CreatorPubli.Api.Reminders;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -34,10 +35,12 @@ if (jwt.Key.Length < 32) throw new InvalidOperationException("Configure Jwt:Key 
 builder.Services.AddSingleton(jwt);
 builder.Services.AddSingleton(config.GetSection("Google").Get<GoogleOptions>() ?? new GoogleOptions());
 builder.Services.AddSingleton<TokenService>();
+builder.Services.AddSingleton<EmailVerificationTokens>();
 builder.Services.AddSingleton(config.GetSection("Email").Get<EmailOptions>() ?? new EmailOptions());
 builder.Services.AddSingleton(config.GetSection("Frontend").Get<FrontendOptions>() ?? new FrontendOptions());
 builder.Services.AddSingleton<EmailQueue>();
 builder.Services.AddHostedService<EmailSenderService>();
+builder.Services.AddHostedService<ReminderDigestService>();
 var mercadoPago = config.GetSection("MercadoPago").Get<MercadoPagoOptions>() ?? new MercadoPagoOptions();
 builder.Services.AddSingleton(mercadoPago);
 builder.Services.AddHttpClient<MercadoPagoClient>(c => c.BaseAddress = new Uri("https://api.mercadopago.com/"));
@@ -53,6 +56,20 @@ builder.Services
             ValidIssuer = jwt.Issuer,
             ValidAudience = jwt.Audience,
             IssuerSigningKey = jwt.SigningKey(),
+        };
+        // Token de uma sessão encerrada (troca de senha, "sair de todos os aparelhos") ou de conta apagada = 401.
+        o.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async ctx =>
+            {
+                var db = ctx.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+                var principal = ctx.Principal!;
+                var userId = principal.UserId();
+                var current = await db.Users.Where(u => u.Id == userId).Select(u => (int?)u.SessionVersion).SingleOrDefaultAsync();
+                // Tokens emitidos antes da versão de sessão existir não têm a claim: valem como versão 0.
+                var version = principal.FindFirst(TokenService.SessionVersionClaim)?.Value ?? "0";
+                if (current?.ToString() != version) ctx.Fail("Sessão encerrada.");
+            },
         };
     });
 builder.Services.AddAuthorization();

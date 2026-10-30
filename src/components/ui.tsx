@@ -81,7 +81,7 @@ export function Empty({ children }: { children: ReactNode }) {
   return <p className="empty">{children}</p>
 }
 
-export function PageHead({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
+export function PageHead({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
     <div className="page-head">
       <div>

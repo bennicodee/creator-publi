@@ -220,7 +220,7 @@ function InvoicesContent() {
           </div>
           <p className="muted small note">
             Nesta versão a NF não é transmitida à prefeitura: use estes dados no emissor (ex.: Emissor Nacional do MEI) e registre aqui o
-            número. A emissão automática entra com o backend.
+            número.
           </p>
           <InvoiceSheet campaign={selected} invoice={draft} />
         </Card>

@@ -12,7 +12,7 @@ export function Metrics() {
     <>
       <PageHead title="Métricas" subtitle="Confirme suas postagens e acompanhe o resultado de cada publi." />
       <Premium
-        feature="Integração Instagram e TikTok"
+        feature="Métricas dos posts"
         description="Confirme cada postagem pelo link, registre views e engajamento e veja o custo por mil views de cada marca — o argumento perfeito pra renegociar."
       >
         <MetricsContent />
@@ -94,7 +94,7 @@ function MetricsContent() {
           })}
         </div>
         <p className="muted small note">
-          A sincronização automática com a API do Instagram/TikTok entra junto com o backend. Por enquanto, atualize os números aqui —
+          A busca automática dos números no Instagram e no TikTok vem em breve. Por enquanto, atualize os números aqui —
           eles alimentam o seu mídia kit.
         </p>
       </Card>

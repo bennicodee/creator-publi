@@ -546,3 +546,24 @@ textarea.script { font-family: ui-monospace, Consolas, monospace; font-size: 0.8
   .invoice-sheet table { width: 100%; border-collapse: collapse; margin-top: 8mm; }
   .invoice-sheet td { border: 1px solid #ccc; padding: 3mm; }
 }
+
+/* ---------- termos e privacidade ---------- */
+.legal-page { min-height: 100vh; padding: 32px 16px; background: var(--bg); }
+.legal { max-width: 760px; margin: 0 auto; padding: 32px; }
+.legal-logo { display: inline-flex; margin-bottom: 20px; }
+.legal h1 { font-size: 1.6rem; margin-bottom: 2px; }
+.legal h2 { font-size: 1.05rem; margin: 26px 0 8px; }
+.legal p, .legal li { line-height: 1.6; }
+.legal ul { padding-left: 20px; margin: 8px 0; }
+.legal li { margin: 4px 0; }
+.legal a { color: var(--brand); }
+.legal-footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+@media (max-width: 600px) { .legal { padding: 20px 16px; } }
+
+/* ---------- aviso de e-mail não confirmado ---------- */
+.verify-banner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; padding: 10px 14px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); font-size: 0.88rem; border: 1px solid color-mix(in srgb, var(--warn) 35%, var(--border)); margin-bottom: 16px; }
+.verify-banner .link-btn { color: var(--warn); text-decoration: underline; }
+
+.auth-legal { margin: 0; font-size: 0.78rem; }
+.auth-legal a { color: var(--brand); }
+.soon-badge { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 0.72rem; font-weight: 600; border: 1px solid var(--border); }

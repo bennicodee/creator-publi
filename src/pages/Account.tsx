@@ -45,11 +45,20 @@ function useSubmit() {
 export function Account() {
   return (
     <>
-      <PageHead title="Minha conta" subtitle="Seus dados de acesso ao CreatorPubli." />
+      <PageHead
+        title="Minha conta"
+        subtitle={
+          <>
+            Seus dados de acesso ao CreatorPubli. · <a href="#/termos" className="link">Termos de Uso</a> ·{' '}
+            <a href="#/privacidade" className="link">Política de Privacidade</a>
+          </>
+        }
+      />
       <div className="grid-2">
         <div className="stack">
           <PersonalData />
           <Password />
+          <Sessions />
         </div>
         <DeleteAccount />
       </div>
@@ -70,11 +79,12 @@ function PersonalData() {
     e.preventDefault()
     run(async () => {
       const updated = await api.updateAccount(name, nickname, email)
+      const emailChanged = updated.email !== user!.email
       setUser(updated)
       setName(updated.name)
       setNickname(updated.nickname)
       setEmail(updated.email)
-      return 'Dados atualizados.'
+      return emailChanged ? `Dados atualizados. Enviamos um link para ${updated.email} para confirmar o novo e-mail.` : 'Dados atualizados.'
     })
   }
 
@@ -112,7 +122,7 @@ function PersonalData() {
 }
 
 function Password() {
-  const { user, setUser } = useAuth()
+  const { user, replaceSession } = useAuth()
   const hasPassword = user!.hasPassword
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
@@ -125,11 +135,13 @@ function Password() {
     if (next.length < 6) return setMsg({ tone: 'bad', text: 'A nova senha precisa ter pelo menos 6 caracteres.' })
     if (next !== confirm) return setMsg({ tone: 'bad', text: 'As senhas não conferem.' })
     run(async () => {
-      setUser(await api.changePassword(current, next))
+      replaceSession(await api.changePassword(current, next))
       setCurrent('')
       setNext('')
       setConfirm('')
-      return hasPassword ? 'Senha alterada.' : 'Senha criada. Agora você também pode entrar com e-mail e senha.'
+      return hasPassword
+        ? 'Senha alterada. Os outros aparelhos conectados foram desconectados.'
+        : 'Senha criada. Agora você também pode entrar com e-mail e senha.'
     })
   }
 
@@ -159,6 +171,31 @@ function Password() {
           {busy ? 'Salvando…' : hasPassword ? 'Alterar senha' : 'Criar senha'}
         </button>
       </form>
+    </Card>
+  )
+}
+
+function Sessions() {
+  const { replaceSession } = useAuth()
+  const { busy, msg, run } = useSubmit()
+
+  const revoke = () =>
+    run(async () => {
+      replaceSession(await api.revokeSessions())
+      return 'Pronto: só este aparelho continua conectado.'
+    })
+
+  return (
+    <Card title="Aparelhos conectados">
+      <div className="account-form">
+        <p className="muted small">
+          Entrou em um computador emprestado ou perdeu o celular? Desconecte sua conta de todos os outros aparelhos.
+        </p>
+        <FormMsg msg={msg} />
+        <button type="button" className="btn self-start" onClick={revoke} disabled={busy}>
+          {busy ? 'Desconectando…' : 'Sair de todos os outros aparelhos'}
+        </button>
+      </div>
     </Card>
   )
 }

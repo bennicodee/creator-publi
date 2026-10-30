@@ -18,6 +18,8 @@ interface Auth {
   signOut: () => void
   /** Atualiza nome/e-mail/senha mostrados no app depois de salvar em Minha conta. */
   setUser: (user: User) => void
+  /** Troca pela sessão nova devolvida pela API (troca de senha, "sair de todos os aparelhos"). */
+  replaceSession: (res: AuthResponse) => void
 }
 
 const KEY = 'creatorpubli:session'
@@ -77,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       resetPassword: async (token, newPassword) => start(await api.resetPassword(token, newPassword)),
       signOut: () => setSession(null),
       setUser: (user) => setSession((s) => s && { ...s, user }),
+      replaceSession: start,
     }
   }, [session])
 

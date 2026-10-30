@@ -26,6 +26,8 @@ public class GoogleOptions
 
 public class TokenService(JwtOptions options)
 {
+    public const string SessionVersionClaim = "sv";
+
     public AuthResponse Issue(User user)
     {
         var expires = DateTimeOffset.UtcNow.AddDays(options.ExpiresInDays);
@@ -36,6 +38,7 @@ public class TokenService(JwtOptions options)
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim(JwtRegisteredClaimNames.Name, user.Name),
+                new Claim(SessionVersionClaim, user.SessionVersion.ToString()),
             ],
             expires: expires.UtcDateTime,
             signingCredentials: new SigningCredentials(options.SigningKey(), SecurityAlgorithms.HmacSha256));
@@ -54,6 +57,9 @@ public static class Clock
 {
     static readonly TimeZoneInfo Brasilia = TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo");
 
+    // Data e hora agora no fuso de Brasília.
+    public static DateTime Now => TimeZoneInfo.ConvertTime(DateTime.UtcNow, Brasilia);
+
     // "Hoje" no fuso de Brasília, igual ao todayISO() do frontend para quem está no Brasil.
-    public static DateOnly Today => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(DateTime.UtcNow, Brasilia));
+    public static DateOnly Today => DateOnly.FromDateTime(Now);
 }

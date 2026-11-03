@@ -57,7 +57,8 @@ if [ -f "$LOG" ]; then
         echo "celular:            $(echo "$lines" | grep -Eic 'iphone|android' || true) requisições"
         echo "erros do servidor:  $(echo "$lines" | awk '$9 ~ /^5/' | wc -l) (5xx)"
         echo "logins e cadastros:"
-        echo "$lines" | grep -o 'POST /api/auth/[a-z-]*' | sed 's|POST /api/auth/||' | sort | uniq -c \
+        # || true: dia sem nenhum login não é erro (grep sem resultado sai com 1).
+        { echo "$lines" | grep -o 'POST /api/auth/[a-z-]*' || true; } | sed 's|POST /api/auth/||' | sort | uniq -c \
             | sed -e 's/register$/cadastro com e-mail/' -e 's/login$/login com e-mail/' -e 's/google$/login\/cadastro com Google/' \
                   -e 's/forgot-password$/esqueci minha senha/' -e 's/reset-password$/senha redefinida/' -e 's/verify-email$/e-mail confirmado/' \
             | sed 's/^/  /'
